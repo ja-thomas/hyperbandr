@@ -1,3 +1,5 @@
+
+
 bracket = R6Class("bracket",
   public = list(
     id = NULL,
@@ -16,12 +18,17 @@ bracket = R6Class("bracket",
       self$n.configs = n.configs
       self$max.budget = max.budget
       self$configurations = sample.fun(par.set, n.configs)
-      self$models = mapply(function(conf, name) {
-        algorithms$new(id = paste(id, name, sep = "."), configuration = conf,
-          init.fun = init.fun, train.fun = train.fun, initial.budget = self$getBudgetAllocation(),
-          performance.fun = performance.fun)
-      }, conf = self$configurations, name = seq_len(n.configs))
-
+      self$models = mapply(
+        function(conf, name) {
+          algorithms$new(id = paste(id, name, sep = "."),
+            configuration = conf,  
+            init.fun = init.fun, 
+            train.fun = train.fun, 
+            initial.budget = self$getBudgetAllocation(),
+            performance.fun = performance.fun)
+          },
+        conf = self$configurations,
+        name = seq_len(n.configs))
     },
     getBudgetAllocation = function() {
       self$max.budget*self$nu^(self$iteration) / self$n.configs
