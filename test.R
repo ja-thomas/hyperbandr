@@ -1,6 +1,6 @@
-load_all()
 library(R6)
 library(smoof)
+load_all()
 
 init.fun = function(r, config) {
   runif(1, 0, 15)
@@ -45,9 +45,18 @@ brack = hyperbandr:::bracket$new(
   sample.fun = sample.fun,
   train.fun = train.fun,
   performance.fun = performance.fun,
-  n.configs = 10,
-  max.budget = 100,
+  s = 4,
+  B = 405,
+  R = 81,
   nu = 3)
+
+brack$run()
+
+
+
+
+
+
 brack$models[[1]]$current.budget
 
 lapply(brack$models, function(x) x$getPerformance())
