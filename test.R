@@ -14,7 +14,7 @@ print(problem)
 param.set = getParamSet(problem)
 
 ## Thus, for a fix value of x1, we would like to optimize x2
-# for the BraninFunction, that is basically the "Wertebreich" along the x2 axis 
+# for the BraninFunction, that is basically the "Wertebreich" along the x2 axis
 plot(problem)
 
 # in hyperband-language: the x1 value is our configuration (e.g. a hyperparameter)!
@@ -40,7 +40,7 @@ performance.fun = function(model) {
   problem(c(config, model))
 }
 
-# with the "new-method" of the factory (this is a default method of each R6 class), 
+# with the "new-method" of the factory (this is a default method of each R6 class),
 # we create objects of the class. Just call $new() to access the method.
 
 obj = hyperbandr:::algorithms$new(
@@ -81,10 +81,6 @@ brack = hyperbandr:::bracket$new(
   nu = 3)
 
 brack$run()
-
-
-
-
 
 
 brack$models[[1]]$current.budget
