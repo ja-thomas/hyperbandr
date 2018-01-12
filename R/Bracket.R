@@ -1,3 +1,5 @@
+
+
 bracket = R6Class("bracket",
   public = list(
     id = NULL,
