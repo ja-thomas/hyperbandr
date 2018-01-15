@@ -5,9 +5,24 @@ library("mlr")
 library("mxnet")
 library("reshape2")
 library("BBmisc")
+library("data.table")
 load_all()
 
 ## define the problem
+
+# read mini_mnist (1/10 of actual mnist for faster evaluation, evenly distributed classes)
+train = fread("mnist/train.csv", header = TRUE)
+test = fread("mnist/test.csv", header = TRUE)
+# Some operations to normalize features
+mnist = as.data.frame(rbind(train, test))
+mnist = mnist[sample(nrow(mnist)), ]
+mnist[, 2:785] = lapply(mnist[, 2:785], function(x) x/255) 
+rm(train)
+rm(test)
+# Generate train and test split
+train.set = sample(nrow(mnist), size = (2/3)*nrow(mnist))
+test.set = setdiff(1:nrow(mnist), train.set)
+
 # mini-mnist has 10 classes
 problem = makeClassifTask(data = mnist, target = "label")
 
@@ -20,7 +35,7 @@ config = lapply(
     makeNumericParam(id = "learning.rate", lower = 0.05, upper = 0.3),
     makeNumericParam(id = "momentum", lower = 0.7, upper = 0.99),
     makeIntegerParam(id = "layers", lower = 1L, upper = 1L),
-    makeIntegerParam(id = "num.layer1", lower = 1L, upper = 64L),
+    makeIntegerParam(id = "num.layer1", lower = 1L, upper = 8L),
     makeDiscreteParam(id = "act1", c("tanh", "relu", "sigmoid")))), 
   function(x) x[!is.na(x)]
 )
@@ -70,9 +85,11 @@ obj$id
 obj$model
 obj$getPerformance()
 obj$continue(budget = 1)
+obj$current.budget
 obj$model
 obj$getPerformance()
 obj$continue(budget = 10)
+obj$current.budget
 obj$getPerformance()
 
 # another function to sample configurations
@@ -83,25 +100,61 @@ sample.fun = function(par.set, n.configs) {
         makeNumericParam(id = "learning.rate", lower = 0.05, upper = 0.3),
         makeNumericParam(id = "momentum", lower = 0.7, upper = 0.99),
         makeIntegerParam(id = "layers", lower = 1L, upper = 1L),
-        makeIntegerParam(id = "num.layer1", lower = 1L, upper = 64L),
+        makeIntegerParam(id = "num.layer1", lower = 1L, upper = 8L),
         makeDiscreteParam(id = "act1", c("tanh", "relu", "sigmoid"))),
       n = n.configs),
     function(x) x[!is.na(x)]
   )
 }
 
-brack = hyperbandr:::bracket$new(
+brack = bracket$new(
   id = "bla",
   par.set = NA,
   sample.fun = sample.fun,
   train.fun = train.fun,
   performance.fun = performance.fun,
-  n.configs = 10,
-  max.budget = 100,
-  nu = 3
+  s = 4,
+  B = 405,
+  max.ressources = 81, 
+  prop.discard = 3 
 )
 
-brack$models[[1]]$current.budget
+length(brack$models)
+brack$getPerformances()
+brack$step()
+length(brack$models)
+brack$getPerformances()
+brack$step()
+length(brack$models)
+brack$getPerformances()
+brack$step()
+length(brack$models)
+brack$getPerformances()
+brack$step()
+length(brack$models)
+brack$getPerformances()
 
-lapply(brack$models, function(x) x$getPerformance())
+brack$run()
+brack$getPerformances()
 
+
+hyperhyper = hyperband(
+  # hyperband
+  max.ressources = 81, 
+  prop.discard = 3, 
+  # new param
+  bracket.winner = TRUE,
+  # obj
+  #configuration = config, 
+  #initial.budget = 0, 
+  #init.fun = init.fun,
+  # bracket
+  id = "test", 
+  par.set = NA, 
+  sample.fun =  sample.fun, 
+  train.fun = train.fun, 
+  performance.fun = performance.fun
+)
+
+hyperhyper[[1]]$models
+hyperhyper[[1]]$getPerformances()

@@ -1,5 +1,6 @@
 library(R6)
 library(smoof)
+library(devtools)
 load_all()
 
 ## define the problem to optimize
@@ -43,7 +44,7 @@ performance.fun = function(model) {
 # with the "new-method" of the factory (this is a default method of each R6 class),
 # we create objects of the class. Just call $new() to access the method.
 
-obj = hyperbandr:::algorithms$new(
+obj = algorithms$new(
   id = "test",
   configuration = config,
   initial.budget = 0,
@@ -66,10 +67,10 @@ obj$getPerformance()
 
 # another function to sample configurations
 sample.fun = function(par.set, n.configs) {
-  runif(n.configs, -5, 10)
+  runif(n = n.configs, -5, 10)
 }
 
-brack = hyperbandr:::bracket$new(
+brack = bracket$new(
   id = "bla",
   par.set = NA,
   sample.fun = sample.fun,
@@ -77,13 +78,45 @@ brack = hyperbandr:::bracket$new(
   performance.fun = performance.fun,
   s = 4,
   B = 405,
-  R = 81,
-  nu = 3)
+  max.ressources = 81, 
+  prop.discard = 3 
+)
 
+length(brack$models)
 brack$run()
-
+length(brack$models)
+bla = brack$models
+brack$filterTopKModels(1)
 
 brack$models[[1]]$current.budget
 
 lapply(brack$models, function(x) x$getPerformance())
+
+hyperhyper = hyperband(
+  # hyperband
+  max.ressources = 81, 
+  prop.discard = 3, 
+  # new param
+  bracket.winner = TRUE,
+  # obj
+  #configuration = config, 
+  #initial.budget = 0, 
+  #init.fun = init.fun,
+  # bracket
+  id = "test", 
+  par.set = NA, 
+  sample.fun =  sample.fun, 
+  train.fun = train.fun, 
+  performance.fun = performance.fun
+)
+
+
+
+
+
+
+
+
+
+
 

@@ -5,20 +5,20 @@ bracket = R6Class("bracket",
     id = NULL,
     par.set = NULL,
     sample.fun = NULL,
-    n.configs = NULL,
     configurations = NULL,
-    R = NULL,
+    max.ressources = NULL,
     models = NULL,
-    nu = NULL,
+    prop.discard = NULL,
     s = NULL,
     B = NULL,
-    r = NULL,
+    n.configs = NULL,
+    r.config = NULL,
     iteration = 0,
-    initialize = function(id, par.set, sample.fun, train.fun, performance.fun, s, B, R, nu) {
+    initialize = function(id, par.set, sample.fun, train.fun, performance.fun, s, B, max.ressources, prop.discard) {
       self$id = id
-      self$nu = nu
-      self$n.configs = ceiling((B / R) * (nu^s / (s + 1)))
-      self$r = R * nu^(-s)
+      self$prop.discard = prop.discard
+      self$n.configs = ceiling((B / max.ressources) * (prop.discard^s / (s + 1)))
+      self$r.config = max.ressources * prop.discard^(-s)
       self$s = s
       self$configurations = sample.fun(par.set, self$n.configs)
       self$models = mapply(function(conf, name) {
@@ -29,10 +29,10 @@ bracket = R6Class("bracket",
 
     },
     getBudgetAllocation = function() {
-      self$r*self$nu^(self$iteration)
+      self$r.config*self$prop.discard^(self$iteration)
     },
     getNumberOfModelsToSelect = function() {
-      floor(self$n.configs / self$nu)
+      floor(self$n.configs / self$prop.discard)
     },
     step = function() {
       self$iteration = self$iteration + 1
@@ -45,6 +45,7 @@ bracket = R6Class("bracket",
         self$printState()
         self$step()
       }
+      self$filterTopKModels(k = 1)
       self$printState()
     },
     getPerformances = function() {
