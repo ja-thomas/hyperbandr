@@ -47,6 +47,11 @@ init.fun = function(r, config) {
   return(mod)
 }
 
+mod1 = init.fun(r, config = config)
+mod1
+mod1_perf = performance.fun(mod1)
+mod1_perf
+
 # define the train.fun, for mxnet: basically retrain function
 train.fun = function(mod, budget) {
   lrn = makeLearner("classif.mxff", par.vals = mod$learner$par.vals)
@@ -59,6 +64,11 @@ train.fun = function(mod, budget) {
   mod = train(learner = lrn, task = problem, subset = train.set)
   return(mod)
 }
+
+mod2 = train.fun(mod1, budget = 3)
+mod2
+mod2_perf = performance.fun(mod2)
+mod2_perf
 
 # define the performance.fun
 performance.fun = function(model) {
@@ -121,6 +131,8 @@ brack = bracket$new(
 
 length(brack$models)
 brack$getPerformances()
+brack$getTopKModels(27)
+brack$filterTopKModels(27)
 brack$step()
 length(brack$models)
 brack$getPerformances()
