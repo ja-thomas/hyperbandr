@@ -47,10 +47,10 @@ init.fun = function(r, config) {
   return(mod)
 }
 
-mod1 = init.fun(r, config = config)
-mod1
-mod1_perf = performance.fun(mod1)
-mod1_perf
+# mod1 = init.fun(r, config = config)
+# mod1
+# mod1_perf = performance.fun(mod1)
+# mod1_perf
 
 # define the train.fun, for mxnet: basically retrain function
 train.fun = function(mod, budget) {
@@ -65,10 +65,10 @@ train.fun = function(mod, budget) {
   return(mod)
 }
 
-mod2 = train.fun(mod1, budget = 3)
-mod2
-mod2_perf = performance.fun(mod2)
-mod2_perf
+# mod2 = train.fun(mod1, budget = 3)
+# mod2
+# mod2_perf = performance.fun(mod2)
+# mod2_perf
 
 # define the performance.fun
 performance.fun = function(model) {
@@ -79,28 +79,28 @@ performance.fun = function(model) {
 # with the "new-method" of the factory (this is a default method of each R6 class), 
 # we create objects of the class. Just call $new() to access the method.
 
-obj = hyperbandr:::algorithms$new(
-  id = "neural_net",
-  configuration = config,
-  initial.budget = 0,
-  init.fun = init.fun,
-  train.fun = train.fun,
-  performance.fun = performance.fun
-)
-
-obj
-obj$configuration
-obj$current.budget
-obj$id
-obj$model
-obj$getPerformance()
-obj$continue(budget = 1)
-obj$current.budget
-obj$model
-obj$getPerformance()
-obj$continue(budget = 10)
-obj$current.budget
-obj$getPerformance()
+# obj = hyperbandr:::algorithms$new(
+#   id = "neural_net",
+#   configuration = config,
+#   initial.budget = 0,
+#   init.fun = init.fun,
+#   train.fun = train.fun,
+#   performance.fun = performance.fun
+# )
+# 
+# obj
+# obj$configuration
+# obj$current.budget
+# obj$id
+# obj$model
+# obj$getPerformance()
+# obj$continue(budget = 1)
+# obj$current.budget
+# obj$model
+# obj$getPerformance()
+# obj$continue(budget = 10)
+# obj$current.budget
+# obj$getPerformance()
 
 # another function to sample configurations
 sample.fun = function(par.set, n.configs) {
@@ -117,37 +117,38 @@ sample.fun = function(par.set, n.configs) {
   )
 }
 
-brack = bracket$new(
-  id = "bla",
-  par.set = NA,
-  sample.fun = sample.fun,
-  train.fun = train.fun,
-  performance.fun = performance.fun,
-  s = 4,
-  B = 405,
-  max.ressources = 81, 
-  prop.discard = 3 
-)
-
-length(brack$models)
-brack$getPerformances()
-brack$getTopKModels(27)
-brack$filterTopKModels(27)
-brack$step()
-length(brack$models)
-brack$getPerformances()
-brack$step()
-length(brack$models)
-brack$getPerformances()
-brack$step()
-length(brack$models)
-brack$getPerformances()
-brack$step()
-length(brack$models)
-brack$getPerformances()
-
-brack$run()
-brack$getPerformances()
+# brack = bracket$new(
+#   id = "bla",
+#   par.set = NA,
+#   sample.fun = sample.fun,
+#   train.fun = train.fun,
+#   performance.fun = performance.fun,
+#   s = 4,
+#   B = 405,
+#   max.ressources = 81, 
+#   prop.discard = 3,
+#   max.perf = TRUE
+# )
+# 
+# length(brack$models)
+# brack$getPerformances()
+# brack$getTopKModels(27)
+# brack$filterTopKModels(27)
+# brack$step()
+# length(brack$models)
+# brack$getPerformances()
+# brack$step()
+# length(brack$models)
+# brack$getPerformances()
+# brack$step()
+# length(brack$models)
+# brack$getPerformances()
+# brack$step()
+# length(brack$models)
+# brack$getPerformances()
+# 
+# brack$run()
+# brack$getPerformances()
 
 
 hyperhyper = hyperband(
@@ -156,6 +157,7 @@ hyperhyper = hyperband(
   prop.discard = 3, 
   # new param
   bracket.winner = TRUE,
+  max.perf = TRUE, 
   # obj
   #configuration = config, 
   #initial.budget = 0, 
@@ -168,5 +170,13 @@ hyperhyper = hyperband(
   performance.fun = performance.fun
 )
 
-hyperhyper[[1]]$models
 hyperhyper[[1]]$getPerformances()
+
+lapply(hyperhyper, function(x) x$getPerformance())
+
+list = list(1:3)
+lapply(list, function(x) x^2)
+
+
+
+

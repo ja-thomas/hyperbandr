@@ -7,6 +7,7 @@ hyperband = function(
   prop.discard = 3,
   # new param:
   bracket.winner = TRUE,
+  max.perf = TRUE,
   # Algorithm params:
   #configuration, 
   #initial.budget, 
@@ -35,7 +36,8 @@ hyperband = function(
       s = s,
       B = B,
       max.ressources = max.ressources,
-      prop.discard = prop.discard
+      prop.discard = prop.discard,
+      max.perf = max.perf
     )
     brack$run()
     bracketWinners[[s + 1]] = brack
