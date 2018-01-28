@@ -40,17 +40,27 @@ config = lapply(
   function(x) x[!is.na(x)]
 )
 
+# another function to sample configurations
+sample.fun = function(par.set, n.configs) {
+  lapply(
+    sampleValues(
+      makeParamSet(
+        makeNumericParam(id = "learning.rate", lower = 0.05, upper = 0.3),
+        makeNumericParam(id = "momentum", lower = 0.7, upper = 0.99),
+        makeIntegerParam(id = "layers", lower = 1L, upper = 1L),
+        makeIntegerParam(id = "num.layer1", lower = 1L, upper = 8L),
+        makeDiscreteParam(id = "act1", c("tanh", "relu", "sigmoid"))),
+      n = n.configs),
+    function(x) x[!is.na(x)]
+  )
+}
+
 # define the init.fun to initialize the model
 init.fun = function(r, config) {
   lrn = makeLearner("classif.mxff", begin.round = 1, num.round = 1, par.vals = config)
   mod = train(learner = lrn, task = problem, subset = train.set)
   return(mod)
 }
-
-# mod1 = init.fun(r, config = config)
-# mod1
-# mod1_perf = performance.fun(mod1)
-# mod1_perf
 
 # define the train.fun, for mxnet: basically retrain function
 train.fun = function(mod, budget) {
@@ -65,16 +75,22 @@ train.fun = function(mod, budget) {
   return(mod)
 }
 
-# mod2 = train.fun(mod1, budget = 3)
-# mod2
-# mod2_perf = performance.fun(mod2)
-# mod2_perf
-
 # define the performance.fun
 performance.fun = function(model) {
   pred = predict(model, task = problem, subset = test.set)
   performance(pred, measures = acc)
 }
+
+
+mod1 = init.fun(r, config = sampleValue(config))
+mod1
+mod1_perf = performance.fun(mod1)
+mod1_perf
+
+mod2 = train.fun(mod1, budget = 3)
+mod2
+mod2_perf = performance.fun(mod2)
+mod2_perf
 
 # with the "new-method" of the factory (this is a default method of each R6 class), 
 # we create objects of the class. Just call $new() to access the method.
@@ -102,21 +118,7 @@ performance.fun = function(model) {
 # obj$current.budget
 # obj$getPerformance()
 
-# another function to sample configurations
-sample.fun = function(par.set, n.configs) {
-  lapply(
-    sampleValues(
-      makeParamSet(
-        makeNumericParam(id = "learning.rate", lower = 0.05, upper = 0.3),
-        makeNumericParam(id = "momentum", lower = 0.7, upper = 0.99),
-        makeIntegerParam(id = "layers", lower = 1L, upper = 1L),
-        makeIntegerParam(id = "num.layer1", lower = 1L, upper = 8L),
-        makeDiscreteParam(id = "act1", c("tanh", "relu", "sigmoid"))),
-      n = n.configs),
-    function(x) x[!is.na(x)]
-  )
-}
-
+str(sample.fun(par.set = config, n.configs = 2))
 # brack = bracket$new(
 #   id = "bla",
 #   par.set = NA,

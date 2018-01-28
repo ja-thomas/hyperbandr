@@ -29,7 +29,7 @@ hyperband = function(
     catf("Beginning with bracket %s", s)
     brack = bracket$new(
       id = id,
-      par.set = NA,
+      par.set = config,
       sample.fun = sample.fun,
       train.fun = train.fun,
       performance.fun = performance.fun,
