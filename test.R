@@ -1,32 +1,46 @@
-library(R6)
-library(smoof)
-library(devtools)
+### simple test script for the hyperband package
+library("devtools")
+library("R6")
+library("mlr")
+library("mxnet")
+library("reshape2")
+library("BBmisc")
+library("smoof")
+library("ggplot2")
+library("data.table")
 load_all()
 
-## define the problem to optimize
-# conveniently choose a 2 dimensional function "makeBraninFunction"
+####################################
+## define the problem to optimize ##
+####################################
+
+# we choose the 2 dimensional branin function 
 problem = makeBraninFunction()
 
-# the "makeBraninFunction" has 3 global minima
+# the branin function has 3 global minima
+opt = data.table(x1 = getGlobalOptimum(problem)$param$x1, x2 = getGlobalOptimum(problem)$param$x2)
+(vis = autoplot(problem) + geom_point(data = opt, aes(x = x1, y = x2), shape = 4, colour = "red", size = 5))
 print(problem)
 
-## smoof functions contain a param.set describing types and bounds of the function parameters
-# for the "makeBraninFunction" we have x1 as a hyperparameter, ranging from -5 to 10.15
-param.set = getParamSet(problem)
+# smoof functions contain a param.set describing types and bounds of the function parameters
+(param.set = getParamSet(problem))
 
-## Thus, for a fix value of x1, we would like to optimize x2
-# for the BraninFunction, that is basically the "Wertebreich" along the x2 axis
-plot(problem)
+#######################################
+## define functions to use hyperband ##
+#######################################
 
-# in hyperband-language: the x1 value is our configuration (e.g. a hyperparameter)!
+# we choose x1 as our hyperparameter, ranging from -5 to 10.15
+# in hyperband-language: the x1 values are our configuration
 config = runif(1, -5, 10.15)
 
-# define the init.fun to initialize the model (the current value of x1)
+# define the init.fun to initialize the model, e.g. the current value of x2
 init.fun = function(r, config) {
   runif(1, 0, 15)
 }
 
 # define the train.fun
+# we sample from a normal distribution and add the value to our current x2
+# we keep the new model if the performance improves
 train.fun = function(mod, budget) {
   for(i in seq_len(budget)) {
     mod.new = mod + rnorm(1, sd = 3)
@@ -36,16 +50,24 @@ train.fun = function(mod, budget) {
   return(mod)
 }
 
-# define the performance.fun
+# thus, we also need a function to evaluate the performance
 performance.fun = function(model) {
   problem(c(config, model))
 }
 
-# with the "new-method" of the factory (this is a default method of each R6 class),
-# we create objects of the class. Just call $new() to access the method.
+# another function to sample configurations
+sample.fun = function(par.set, n.configs) {
+  runif(n = n.configs, -5, 10)
+}
 
+#####################################################################
+## time to inspect some of the abilities of the hyperbandr package ##
+#####################################################################
+
+# with the "new-method" we create objects of the class algortihms, 
+# which is basically one randomly sampled and initialized configuration 
 obj = algorithms$new(
-  id = "test",
+  id = "branin",
   configuration = config,
   initial.budget = 0,
   init.fun = init.fun,
@@ -53,22 +75,32 @@ obj = algorithms$new(
   performance.fun = performance.fun
 )
 
+# inspecting the object tells us about the properties of our object
 obj
-obj$configuration
-obj$current.budget
-obj$id
-obj$model
+
+# we can add the current configuration to our plot
+(vis = vis + geom_point(aes(x = obj$configuration, y = obj$model), shape = 4, colour = "blue", size = 5))
+
+# to evaluate the model, we call the getPerformance function
 obj$getPerformance()
-obj$continue(budget = 1)
-obj$model
-obj$getPerformance()
+
+# now its time to retrain the model for some iterations
 obj$continue(budget = 10)
 obj$getPerformance()
 
-# another function to sample configurations
-sample.fun = function(par.set, n.configs) {
-  runif(n = n.configs, -5, 10)
-}
+# let us inspect where the model has moved to 
+(vis = vis + geom_point(aes(x = obj$configuration, y = obj$model), shape = 4, colour = "blue", size = 5))
+
+# we continue for another 1000 iterations
+obj$continue(budget = 1000)
+obj$getPerformance()
+(vis = vis + geom_point(aes(x = obj$configuration, y = obj$model), shape = 4, colour = "blue", size = 5))
+
+
+
+
+
+
 
 brack = bracket$new(
   id = "bla",
