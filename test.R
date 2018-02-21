@@ -8,7 +8,6 @@ library("BBmisc")
 library("smoof")
 library("ggplot2")
 library("data.table")
-load_all()
 
 ####################################
 ## define the problem to optimize ##
@@ -108,6 +107,7 @@ brack = bracket$new(
   sample.fun = sample.fun,
   train.fun = train.fun,
   performance.fun = performance.fun,
+  max.perf = FALSE,
   s = 4,
   B = 405,
   max.ressources = 81, 

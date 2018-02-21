@@ -1,0 +1,122 @@
+---
+title: "Hyperbandr Tutorial"
+author: "Niklas"
+date: "February 21, 2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Hyperbandr Package
+
+This is an R6 implementation of the original hyperband algorithm  <https://arxiv.org/abs/1603.06560>.
+
+R6 is an encapsulated object oriented system akin to those in Java or C++, where objects contain methods in addition to data, and those methods can modify objects directly (unlike S3 and S4 which are both functional object-oriented systems, where class methods are separate from objects, and objects are not mutable).
+
+Essentially, that means that we obtain a very generic implementation, which is working with every other R package (as long the algorithm meets the requirements of hyperband).
+
+## Simple example: optimize the branin function
+
+```{r, echo = TRUE, message = FALSE}
+library("smoof")
+library("data.table")
+library("ggplot2")
+```
+
+```{r, echo = TRUE, fig.height = 3.6, fig.width = 6, fig.align = "center"}
+problem = makeBraninFunction()
+
+# the branin function has 3 global minima (red crosses)
+opt = data.table(x1 = getGlobalOptimum(problem)$param$x1, 
+                 x2 = getGlobalOptimum(problem)$param$x2)
+
+(vis = autoplot(problem) + geom_point(data = opt, aes(x = x1, y = x2), 
+                                      shape = 4, colour = "red", size = 5))
+
+```
+
+We treat the value of $x_1$ as our "configuration" and try to find the optimal value of $x_2$ (reminder: in hyperband, we have to sample configurations for each bracket)
+
+So in order to apply $\textbf{hyperbandr}$ on that problem, we need to define four functions.
+
+### 1: At first, we would like to have a function that samples random configurations
+
+```{r, echo = TRUE}
+# par.set: the parameter space to sample from
+# n.configs: the amount of configs to sample
+sample.fun = function(par.set, n.configs) {
+  runif(n = n.configs, -5, 10)
+}
+```
+
+### 2: Now we also need a function to initialize each configuration as a model
+
+```{r, echo = TRUE}
+# 
+config = runif(1, -5, 10.15)
+
+# r: the initial budget for each config (for branin: not relevant)
+# config: the configuration, e.g. for each x_1 the current value of x_2
+init.fun = function(r, config) {
+  runif(1, 0, 15)
+}
+```
+
+### 3: Define a function to train each model
+
+To train our model, we simply sample values from a normal distribution and add or subtract them from our current $x_2$.
+If the performance improves, we keep the model, else we discard it and keep the old one.
+
+```{r, echo = TRUE}
+# mod: the model to train
+# budget: number of iterations to train the model for
+train.fun = function(mod, budget) {
+  for(i in seq_len(budget)) {
+    mod.new = mod + rnorm(1, sd = 3)
+    if(performance.fun(mod.new) < performance.fun(mod))
+      mod = mod.new
+  }
+  return(mod)
+}
+```
+
+### 4: Finally, we define a function to evaluate the performance of each model
+
+```{r, echo = TRUE}
+# model: the model to evaluate 
+performance.fun = function(model) {
+  problem(c(config, model))
+}
+```
+
+### Apply hyperbandr (since the problem to optimize here is very easy, the execution will only take 1-2 seconds)
+
+```{r, echo = TRUE, message = FALSE}
+library("R6")
+library("devtools")
+load_all()
+```
+
+```{r, echo = TRUE}
+hyperhyper = hyperband(
+  max.ressources = 81, 
+  prop.discard = 3, 
+  bracket.winner = TRUE,
+  id = "branin", 
+  par.set = NA, 
+  sample.fun =  sample.fun, 
+  train.fun = train.fun, 
+  performance.fun = performance.fun
+)
+```
+
+\newpage
+Let us inspect the results: we obtain a list of 5 R6 objects.
+```{r, echo = TRUE}
+hyperhyper
+```
+
