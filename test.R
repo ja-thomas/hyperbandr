@@ -8,6 +8,7 @@ library("BBmisc")
 library("smoof")
 library("ggplot2")
 library("data.table")
+load_all()
 
 ####################################
 ## define the problem to optimize ##
@@ -142,7 +143,7 @@ hyperhyper = hyperband(
   performance.fun = performance.fun
 )
 
-
+hyperhyper[[1]]$models[[1]]$model
 
 
 
