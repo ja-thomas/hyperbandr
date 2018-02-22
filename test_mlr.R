@@ -29,30 +29,17 @@ problem = makeClassifTask(data = mnist, target = "label")
 # each class has 600 samples
 print(problem)
 
-# in hyperband-language: the x1 value is our configuration (e.g. a hyperparameter)!
-config = lapply(
-  sampleValue(makeParamSet(
+# config space
+configSpace = makeParamSet(
     makeNumericParam(id = "learning.rate", lower = 0.05, upper = 0.3),
     makeNumericParam(id = "momentum", lower = 0.7, upper = 0.99),
     makeIntegerParam(id = "layers", lower = 1L, upper = 1L),
     makeIntegerParam(id = "num.layer1", lower = 1L, upper = 8L),
-    makeDiscreteParam(id = "act1", c("tanh", "relu", "sigmoid")))), 
-  function(x) x[!is.na(x)]
-)
+    makeDiscreteParam(id = "act1", c("tanh", "relu", "sigmoid")))
 
-# another function to sample configurations
+# sample fun
 sample.fun = function(par.set, n.configs) {
-  lapply(
-    sampleValues(
-      makeParamSet(
-        makeNumericParam(id = "learning.rate", lower = 0.05, upper = 0.3),
-        makeNumericParam(id = "momentum", lower = 0.7, upper = 0.99),
-        makeIntegerParam(id = "layers", lower = 1L, upper = 1L),
-        makeIntegerParam(id = "num.layer1", lower = 1L, upper = 8L),
-        makeDiscreteParam(id = "act1", c("tanh", "relu", "sigmoid"))),
-      n = n.configs),
-    function(x) x[!is.na(x)]
-  )
+  lapply(sampleValues(par = par.set, n = n.configs), function(x) x[!is.na(x)])
 }
 
 # define the init.fun to initialize the model
@@ -81,13 +68,14 @@ performance.fun = function(model) {
   performance(pred, measures = acc)
 }
 
+confs = sample.fun(n.configs = 10)
 
-mod1 = init.fun(r, config = sampleValue(config))
+mod1 = init.fun(r, config = confs[[2]])
 mod1
 mod1_perf = performance.fun(mod1)
 mod1_perf
 
-mod2 = train.fun(mod1, budget = 3)
+mod2 = train.fun(mod1, budget = 10)
 mod2
 mod2_perf = performance.fun(mod2)
 mod2_perf
@@ -95,89 +83,73 @@ mod2_perf
 # with the "new-method" of the factory (this is a default method of each R6 class), 
 # we create objects of the class. Just call $new() to access the method.
 
-# obj = hyperbandr:::algorithms$new(
-#   id = "neural_net",
-#   configuration = config,
-#   initial.budget = 0,
-#   init.fun = init.fun,
-#   train.fun = train.fun,
-#   performance.fun = performance.fun
-# )
-# 
-# obj
-# obj$configuration
-# obj$current.budget
-# obj$id
-# obj$model
-# obj$getPerformance()
-# obj$continue(budget = 1)
-# obj$current.budget
-# obj$model
-# obj$getPerformance()
-# obj$continue(budget = 10)
-# obj$current.budget
-# obj$getPerformance()
+obj = algorithm$new(
+  id = "neural_net",
+  configuration = sample.fun(par.set = configSpace, n.configs = 1)[[1]],
+  initial.budget = 0,
+  init.fun = init.fun,
+  train.fun = train.fun,
+  performance.fun = performance.fun
+)
 
-str(sample.fun(par.set = config, n.configs = 2))
-# brack = bracket$new(
-#   id = "bla",
-#   par.set = NA,
-#   sample.fun = sample.fun,
-#   train.fun = train.fun,
-#   performance.fun = performance.fun,
-#   s = 4,
-#   B = 405,
-#   max.ressources = 81, 
-#   prop.discard = 3,
-#   max.perf = TRUE
-# )
-# 
-# length(brack$models)
-# brack$getPerformances()
-# brack$getTopKModels(27)
-# brack$filterTopKModels(27)
-# brack$step()
-# length(brack$models)
-# brack$getPerformances()
-# brack$step()
-# length(brack$models)
-# brack$getPerformances()
-# brack$step()
-# length(brack$models)
-# brack$getPerformances()
-# brack$step()
-# length(brack$models)
-# brack$getPerformances()
-# 
-# brack$run()
-# brack$getPerformances()
+obj
+obj$configuration
+obj$current.budget
+obj$id
+obj$model
+obj$getPerformance()
+obj$continue(budget = 1)
+obj$current.budget
+obj$model
+obj$getPerformance()
+obj$continue(budget = 10)
+obj$current.budget
+obj$getPerformance()
+
+brack = bracket$new(
+  max.perf = TRUE,
+  max.ressources = 81,
+  prop.discard = 3,
+  s = 4,
+  B = (4 + 1)*81,
+  id = "neural_net",
+  par.set = configSpace,
+  sample.fun = sample.fun,
+  train.fun = train.fun,
+  performance.fun = performance.fun
+)
+
+length(brack$models)
+brack$models
+
+brack$run()
+brack$getPerformances()
 
 
 hyperhyper = hyperband(
   # hyperband
+  max.perf = TRUE, 
   max.ressources = 81, 
   prop.discard = 3, 
   # new param
-  bracket.winner = TRUE,
-  max.perf = TRUE, 
-  # obj
-  #configuration = config, 
-  #initial.budget = 0, 
+  #bracket.winner = TRUE,
+  id = "neural_net", 
+  par.set = configSpace, 
+  sample.fun =  sample.fun,
   #init.fun = init.fun,
-  # bracket
-  id = "test", 
-  par.set = NA, 
-  sample.fun =  sample.fun, 
   train.fun = train.fun, 
   performance.fun = performance.fun
 )
 
 hyperhyper[[1]]$getPerformances()
+hyperhyper[[2]]$getPerformances()
+hyperhyper[[3]]$getPerformances()
+hyperhyper[[4]]$getPerformances()
+hyperhyper[[5]]$getPerformances()
 
-lapply(hyperhyper, function(x) x$getPerformance())
 
-list = list(1:3)
-lapply(list, function(x) x^2)
+
+
 
 
 

@@ -1,4 +1,22 @@
-
+#############################################################################
+### R6 class to create bracket objects
+#
+## A bracket object consits of multiple algorithm objects
+#
+## inputs:
+#
+# id: unique id of each algorithm object
+#
+# configuration: parameter configuration to use for the algorithm object
+# initial.budget: the budget to use for the initialization of the algorithm object
+# init.fun: a function initializing the algorithm object
+# train.fun: a function training the algorithm object
+# performance.fun: a function evaluating the algorithm object
+#
+## methods:
+#
+# continue: a function applying train.fun to retrain the model for <budget> iterations
+# getPerformance: a function applying performance.fun to evaluate the current model
 
 bracket = R6Class("bracket",
   public = list(
@@ -15,18 +33,25 @@ bracket = R6Class("bracket",
     r.config = NULL,
     iteration = 0,
     max.perf = NULL,
-    initialize = function(id, par.set, sample.fun, train.fun, performance.fun, s, B, max.ressources, prop.discard, max.perf) {
+    initialize = function(max.perf, max.ressources, prop.discard, s, B, id, 
+                          par.set, sample.fun, train.fun, performance.fun) {
       self$max.perf = max.perf
       self$id = id
       self$prop.discard = prop.discard
-      self$n.configs = ceiling((B / max.ressources) * (prop.discard^s / (s + 1)))
-      self$r.config = max.ressources * prop.discard^(-s)
       self$s = s
+      self$B = B
+      
+      self$n.configs = ceiling((self$B / max.ressources) * (prop.discard^s / (s + 1)))
+      self$r.config = max.ressources * prop.discard^(-s)
+      
       self$configurations = sample.fun(par.set, self$n.configs)
       self$models = mapply(function(conf, name) {
-        algorithms$new(id = paste(id, name, sep = "."), configuration = conf,
-          init.fun = init.fun, train.fun = train.fun, initial.budget = self$getBudgetAllocation(),
-          performance.fun = performance.fun)
+        algorithm$new(id = paste(id, name, sep = "."), 
+                      configuration = conf,
+                      initial.budget = self$getBudgetAllocation(),
+                      init.fun = init.fun, 
+                      train.fun = train.fun, 
+                      performance.fun = performance.fun)
       }, conf = self$configurations, name = seq_len(self$n.configs))
     },
     getBudgetAllocation = function() {

@@ -29,21 +29,29 @@ print(problem)
 ## define functions to use hyperband ##
 #######################################
 
-# we choose x1 as our hyperparameter, ranging from -5 to 10.15
-# in hyperband-language: the x1 values are our configuration
-config = runif(1, -5, 10.15)
+# config space
+configSpace = makeParamSet(
+    makeNumericParam(id = "x1", lower = -5, upper = 10.1))
 
-# define the init.fun to initialize the model, e.g. the current value of x2
-init.fun = function(r, config) {
-  runif(1, 0, 15)
+# sample fun
+sample.fun = function(par.set, n.configs) {
+  sampleValues(par = par.set, n = n.configs)
 }
 
-# define the train.fun
-# we sample from a normal distribution and add the value to our current x2
-# we keep the new model if the performance improves
+config = sample.fun(configSpace, 1)
+# init fun
+init.fun = function(r, config) {
+  x1 = unname(unlist(config))
+  x2 = runif(1, 0, 15)
+  mod = c(x1, x2)
+  return(mod)
+}
+
+mod = init.fun(config = config)
+#
 train.fun = function(mod, budget) {
   for(i in seq_len(budget)) {
-    mod.new = mod + rnorm(1, sd = 3)
+    mod.new = c(mod[[1]], mod[[2]] + rnorm(1, sd = 3))
     if(performance.fun(mod.new) < performance.fun(mod))
       mod = mod.new
   }
@@ -52,31 +60,45 @@ train.fun = function(mod, budget) {
 
 # thus, we also need a function to evaluate the performance
 performance.fun = function(model) {
-  problem(c(config, model))
+  problem(c(model[[1]], model[[2]]))
 }
 
-# another function to sample configurations
-sample.fun = function(par.set, n.configs) {
-  runif(n = n.configs, -5, 10)
-}
+# by hand:
+config = sampleValues(par = configSpace, n = 1)[[1]]
+mod_init = init.fun(config = config)
+mod_perf = performance.fun(configuration = config, model = mod_init)
+mod_trained = train.fun(mod = mod_init, budget = 5)
 
-#####################################################################
-## time to inspect some of the abilities of the hyperbandr package ##
-#####################################################################
-
-# with the "new-method" we create objects of the class algortihms, 
-# which is basically one randomly sampled and initialized configuration 
-obj = algorithms$new(
+#
+obj = algorithm$new(
   id = "branin",
-  configuration = config,
+  configuration = sample.fun(par.set = configSpace, n.configs = 1)[[1]],
   initial.budget = 0,
   init.fun = init.fun,
   train.fun = train.fun,
   performance.fun = performance.fun
 )
 
-# inspecting the object tells us about the properties of our object
-obj
+obj$configuration
+obj$model
+obj$getPerformance()
+
+brack = bracket$new(
+  max.perf = TRUE,
+  max.ressources = 81,
+  prop.discard = 3,
+  s = 4,
+  B = (4 + 1)*81,
+  id = "branin",
+  par.set = configSpace,
+  sample.fun = sample.fun,
+  train.fun = train.fun,
+  performance.fun = performance.fun
+)
+
+#####################################################################
+## time to inspect some of the abilities of the hyperbandr package ##
+#####################################################################
 
 # we can add the current configuration to our plot
 (vis = vis + geom_point(aes(x = obj$configuration, y = obj$model), shape = 4, colour = "blue", size = 5))
@@ -99,53 +121,49 @@ obj$getPerformance()
 
 
 
-
-
-
-brack = bracket$new(
-  id = "bla",
-  par.set = NA,
-  sample.fun = sample.fun,
-  train.fun = train.fun,
-  performance.fun = performance.fun,
-  max.perf = FALSE,
-  s = 4,
-  B = 405,
-  max.ressources = 81, 
-  prop.discard = 3 
-)
-
-length(brack$models)
-brack$run()
-length(brack$models)
-bla = brack$models
-brack$filterTopKModels(1)
-
-brack$models[[1]]$current.budget
-
-lapply(brack$models, function(x) x$getPerformance())
-
 hyperhyper = hyperband(
   # hyperband
+  max.perf = FALSE, 
   max.ressources = 81, 
   prop.discard = 3, 
   # new param
-  bracket.winner = TRUE,
-  # obj
-  #configuration = config, 
-  #initial.budget = 0, 
+  #bracket.winner = TRUE,
+  id = "neural_net", 
+  par.set = configSpace, 
+  sample.fun =  sample.fun,
   #init.fun = init.fun,
-  # bracket
-  id = "test", 
-  par.set = NA, 
-  sample.fun =  sample.fun, 
   train.fun = train.fun, 
   performance.fun = performance.fun
 )
 
+# hyperhyper[[1]]$getPerformances()
+# hyperhyper[[2]]$getPerformances()
+# hyperhyper[[3]]$getPerformances()
+# hyperhyper[[4]]$getPerformances()
+# hyperhyper[[5]]$getPerformances()
+
+(vis = vis + geom_point(aes(x = hyperhyper[[1]]$models[[1]]$model[1], 
+                            y = hyperhyper[[1]]$models[[1]]$model[2]), 
+                        shape = 4, colour = "blue", size = 5)
+  + geom_point(aes(x = hyperhyper[[2]]$models[[1]]$model[1],
+                   y = hyperhyper[[2]]$models[[1]]$model[2]),
+               shape = 4, colour = "blue", size = 5) 
+  + geom_point(aes(x = hyperhyper[[3]]$models[[1]]$model[1],
+                   y = hyperhyper[[3]]$models[[1]]$model[2]),
+               shape = 4, colour = "blue", size = 5)
+  + geom_point(aes(x = hyperhyper[[4]]$models[[1]]$model[1],
+                   y = hyperhyper[[4]]$models[[1]]$model[2]),
+               shape = 4, colour = "blue", size = 5)
+  + geom_point(aes(x = hyperhyper[[5]]$models[[1]]$model[1],
+                   y = hyperhyper[[5]]$models[[1]]$model[2]),
+               shape = 4, colour = "blue", size = 5))
+
+
+hyperhyper[[1]]
+hyperhyper[[1]]$models
+hyperhyper[[1]]$models[[1]]$configuration
 hyperhyper[[1]]$models[[1]]$model
-
-
+hyperhyper[[1]]$models[[1]]$getPerformance()
 
 
 
