@@ -63,12 +63,6 @@ performance.fun = function(model) {
   problem(c(model[[1]], model[[2]]))
 }
 
-# by hand:
-config = sampleValues(par = configSpace, n = 1)[[1]]
-mod_init = init.fun(config = config)
-mod_perf = performance.fun(configuration = config, model = mod_init)
-mod_trained = train.fun(mod = mod_init, budget = 5)
-
 #
 obj = algorithm$new(
   id = "branin",
@@ -136,11 +130,23 @@ hyperhyper = hyperband(
   performance.fun = performance.fun
 )
 
-# hyperhyper[[1]]$getPerformances()
-# hyperhyper[[2]]$getPerformances()
-# hyperhyper[[3]]$getPerformances()
-# hyperhyper[[4]]$getPerformances()
-# hyperhyper[[5]]$getPerformances()
+# for plotting
+results = data.frame(matrix(ncol = 10, nrow = 10))
+colnames(results) = c("b1: x1", "b1: x2", "b2: x1", "b2: x2", "b3: x1", 
+                      "b3: x2", "b4: x1", "b4: x2", "b5: x1", "b5: x2")
+results[1, 1] = round(hyperhyper[[1]]$models[[1]]$model[[1]], digits = 2)
+results[1, 2] = round(hyperhyper[[1]]$models[[1]]$model[[2]], digits = 2)
+results[1, 3] = round(hyperhyper[[2]]$models[[1]]$model[[1]], digits = 2)
+results[1, 4] = round(hyperhyper[[2]]$models[[1]]$model[[2]], digits = 2)
+results[1, 5] = round(hyperhyper[[3]]$models[[1]]$model[[1]], digits = 2)
+results[1, 6] = round(hyperhyper[[3]]$models[[1]]$model[[2]], digits = 2)
+results[1, 7] = round(hyperhyper[[4]]$models[[1]]$model[[1]], digits = 2)
+results[1, 8] = round(hyperhyper[[4]]$models[[1]]$model[[2]], digits = 2)
+results[1, 9] = round(hyperhyper[[5]]$models[[1]]$model[[1]], digits = 2)
+results[1, 10] = round(hyperhyper[[5]]$models[[1]]$model[[2]], digits = 2)
+
+vis = vis + geom_point(data = results(x=quantile(TestDf$Values, percentiles),
+              y=percentiles), aes(x=x, y=y))
 
 (vis = vis + geom_point(aes(x = hyperhyper[[1]]$models[[1]]$model[1], 
                             y = hyperhyper[[1]]$models[[1]]$model[2]), 
@@ -158,7 +164,38 @@ hyperhyper = hyperband(
                    y = hyperhyper[[5]]$models[[1]]$model[2]),
                shape = 4, colour = "blue", size = 5))
 
+# benchmark:
 
+benchmarkThis = function(howManyIt = 10L) {
+  results = data.frame(matrix(ncol = 5, nrow = howManyIt))
+  #colnames(results) = c("bracket 1", "bracket 2", "bracket 3", "bracket 4", "bracket 5")
+  for (i in 1:howManyIt) {
+    catf("Iteration %i", i)
+    hyperhyper = hyperband(
+      max.perf = FALSE, 
+      max.ressources = 81, 
+      prop.discard = 3, 
+      id = "branin", 
+      par.set = configSpace, 
+      sample.fun =  sample.fun,
+      train.fun = train.fun, 
+      performance.fun = performance.fun)
+    results[i, 1] = round(hyperhyper[[1]]$getPerformances(), digits = 2)
+    results[i, 2] = round(hyperhyper[[2]]$getPerformances(), digits = 2)
+    results[i, 3] = round(hyperhyper[[3]]$getPerformances(), digits = 2)
+    results[i, 4] = round(hyperhyper[[4]]$getPerformances(), digits = 2)
+    results[i, 5] = round(hyperhyper[[5]]$getPerformances(), digits = 2)
+  }
+  return(results)
+}
+myBraninBenchmark = benchmarkThis(100)
+
+ggplot(stack(myBraninBenchmark), aes(x = ind, y = values, fill = ind)) + 
+  scale_x_discrete(labels=c("bracket 1","bracket 2","bracket 3","bracket 4", "bracket 5")) + 
+  theme(legend.position = "none") + labs(x = "", y = "performance") + 
+  geom_boxplot()
+
+# other
 hyperhyper[[1]]
 hyperhyper[[1]]$models
 hyperhyper[[1]]$models[[1]]$configuration

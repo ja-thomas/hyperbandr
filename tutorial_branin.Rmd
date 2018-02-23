@@ -39,34 +39,49 @@ opt = data.table(x1 = getGlobalOptimum(problem)$param$x1,
 
 ```
 
-We treat the value of $x_1$ as our "configuration" and try to find the optimal value of $x_2$ (reminder: in hyperband, we have to sample configurations for each bracket)
+We treat the value of $x_1$ as our "configuration" and try to find the optimal value for our "hyperparameter" $x_2$ (reminder: in hyperband, we have to sample configurations for each bracket)
 
-So in order to apply $\textbf{hyperbandr}$ on that problem, we need to define four functions.
+So in order to apply $\textbf{hyperbandr}$ on that problem, we need to define a hyperparameter space and four specific functions.
 
-### 1: At first, we would like to have a function that samples random configurations
+### Configuration Space
+
+As our very first step, we need to define the hyperparameter space to sample our configurations from.
+We want to obtain random values between -5 and approximately 10.1 (our $x_1$ axis..)
+
+```{r, echo = TRUE}
+# we use the makeParamSet function from the ParamHelpers package
+configSpace = makeParamSet(
+    makeNumericParam(id = "x1", lower = -5, upper = 10.1))
+```
+
+### Function 1: the sampling function
+
+Now we need a function to sample configurations from the configuration space
 
 ```{r, echo = TRUE}
 # par.set: the parameter space to sample from
 # n.configs: the amount of configs to sample
 sample.fun = function(par.set, n.configs) {
-  runif(n = n.configs, -5, 10)
+  sampleValues(par = par.set, n = n.configs)
 }
 ```
 
-### 2: Now we also need a function to initialize each configuration as a model
+### Function 2: the initialization function
+
+This function takes a config and samples a corresponding value of $x_2$ in order to initialize the model
 
 ```{r, echo = TRUE}
-# 
-config = runif(1, -5, 10.15)
-
-# r: the initial budget for each config (for branin: not relevant)
-# config: the configuration, e.g. for each x_1 the current value of x_2
+# r: initial budget used for the initialization
+# config: one configuration sampled by sample.fun
 init.fun = function(r, config) {
-  runif(1, 0, 15)
+  x1 = unname(unlist(config))
+  x2 = runif(1, 0, 15)
+  mod = c(x1, x2)
+  return(mod)
 }
 ```
 
-### 3: Define a function to train each model
+### Function 3: the training function
 
 To train our model, we simply sample values from a normal distribution and add or subtract them from our current $x_2$.
 If the performance improves, we keep the model, else we discard it and keep the old one.
@@ -76,7 +91,7 @@ If the performance improves, we keep the model, else we discard it and keep the 
 # budget: number of iterations to train the model for
 train.fun = function(mod, budget) {
   for(i in seq_len(budget)) {
-    mod.new = mod + rnorm(1, sd = 3)
+    mod.new = c(mod[[1]], mod[[2]] + rnorm(1, sd = 3))
     if(performance.fun(mod.new) < performance.fun(mod))
       mod = mod.new
   }
@@ -84,12 +99,14 @@ train.fun = function(mod, budget) {
 }
 ```
 
-### 4: Finally, we define a function to evaluate the performance of each model
+### Function 4: the performance function
+
+Finally, we define a function to evaluate the performance of each model
 
 ```{r, echo = TRUE}
 # model: the model to evaluate 
 performance.fun = function(model) {
-  problem(c(config, model))
+  problem(c(model[[1]], model[[2]]))
 }
 ```
 
@@ -103,20 +120,68 @@ load_all()
 
 ```{r, echo = TRUE}
 hyperhyper = hyperband(
+  max.perf = FALSE, 
   max.ressources = 81, 
   prop.discard = 3, 
-  bracket.winner = TRUE,
   id = "branin", 
-  par.set = NA, 
-  sample.fun =  sample.fun, 
+  par.set = configSpace, 
+  sample.fun =  sample.fun,
   train.fun = train.fun, 
-  performance.fun = performance.fun
-)
+  performance.fun = performance.fun)
 ```
 
 \newpage
 Let us inspect the results: we obtain a list of 5 R6 objects.
+
 ```{r, echo = TRUE}
 hyperhyper
 ```
 
+We could inspect the best configuration of bracket 3:
+
+```{r, echo = TRUE}
+hyperhyper[[3]]$models[[1]]$model
+```
+
+Or the first three configurations of bracket 2:
+
+```{r, echo = TRUE}
+hyperhyper[[2]]$configurations[1:3]
+```
+
+Let us carry out a little benchmark to see if all brackets perform equally well here
+
+```{r, echo = FALSE, message = FALSE, results = "hide"}
+benchmarkThis = function(howManyIt = 10L) {
+  results = data.frame(matrix(ncol = 5, nrow = howManyIt))
+  for (i in 1:howManyIt) {
+    catf("Iteration %i", i)
+    hyperhyper = hyperband(
+      max.perf = FALSE, 
+      max.ressources = 81, 
+      prop.discard = 3, 
+      id = "branin", 
+      par.set = configSpace, 
+      sample.fun =  sample.fun,
+      train.fun = train.fun, 
+      performance.fun = performance.fun)
+    results[i, 1] = round(hyperhyper[[1]]$getPerformances(), digits = 2)
+    results[i, 2] = round(hyperhyper[[2]]$getPerformances(), digits = 2)
+    results[i, 3] = round(hyperhyper[[3]]$getPerformances(), digits = 2)
+    results[i, 4] = round(hyperhyper[[4]]$getPerformances(), digits = 2)
+    results[i, 5] = round(hyperhyper[[5]]$getPerformances(), digits = 2)
+  }
+  return(results)
+}
+
+myBraninBenchmark = benchmarkThis(10)
+```
+
+Unsurprisingly, with hyperband standard configurations, bracket 5 does very bad on the branin problem (max.ressources = 81 and prop.discard = 3).
+
+```{r, echo = TRUE}
+ggplot(stack(myBraninBenchmark), aes(x = ind, y = values, fill = ind)) + 
+  scale_x_discrete(labels=c("bracket 1","bracket 2","bracket 3","bracket 4", "bracket 5")) + 
+  theme(legend.position = "none") + labs(x = "", y = "performance") + 
+  geom_boxplot()
+```
