@@ -18,6 +18,25 @@
 # continue: a function applying train.fun to retrain the model for <budget> iterations
 # getPerformance: a function applying performance.fun to evaluate the current model
 
+#' @title R6 class to create bracket objects
+#' @format \code{\link{R6Class}} object
+#'
+#' @description
+#' An \code{\link[R6]{R6Class}} that consits of multiple algorithm objects
+#'
+#' @field positive [\code{character(1)}]\cr
+#'  Only for binary classification: Level of the positive class (\code{NA} otherwise).
+#' @field classes [\code{character()}]\cr
+#'  Levels of class labels.
+#' @field nclasses [\code{integer(1)}]\cr
+#'  Number of levels of class labels.
+#'
+#' @return [\code{\link{TaskClassif}}].
+#' @export
+#' @examples
+#' task = TaskClassif$new("iris", data = iris, target = "Species")
+#' task$formula
+
 bracket = R6Class("bracket",
   public = list(
     id = NULL,

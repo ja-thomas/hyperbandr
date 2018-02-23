@@ -1,9 +1,21 @@
 Package: hyperbandr
 Title: What the Package Does (one line, title case)
-Version: 0.0.0.9000
-Authors@R: person("First", "Last", email = "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
-Depends: R (>= 3.4.3)
+Version: 0.1
+Authors@R: person("Niklas", "Klein", email = "Niklas.Klein@posteo.de", role = c("aut", "cre"))
+Description: R6 implementation of hyperband optimization algorithm.
+Depends: R (>= 3.4.3),
+    R6,
+    checkmate
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true
+Suggests: knitr,
+    rmarkdown,
+    testthat,
+    smoof,
+    mlr,
+    BBmisc,
+    reshape2,
+    checkmate
+VignetteBuilder: knitr
+RoxygenNote: 6.0.1
