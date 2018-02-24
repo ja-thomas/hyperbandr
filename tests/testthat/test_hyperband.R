@@ -47,7 +47,7 @@ test_that("test if object hyperband works", {
   expect_integerish(length(hyperhyper[[4]]$models), lower = 1, upper = 1)
   expect_integerish(length(hyperhyper[[5]]$models), lower = 1, upper = 1)
   
-  # check if all brackets are of class R6/Bracket
+  # check if all list elements are of class R6/Bracket
   expect_true(is.R6(hyperhyper[[1]]))
   expect_class(hyperhyper[[1]], "Bracket")
   expect_true(is.R6(hyperhyper[[2]]))
