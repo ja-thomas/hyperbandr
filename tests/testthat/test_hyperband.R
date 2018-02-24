@@ -1,6 +1,6 @@
-context("General")
+context("Hyperband")
 
-test_that("test if object works", {
+test_that("test if object hyperband works", {
   problem = smoof::makeBraninFunction()
   configSpace = ParamHelpers::makeParamSet(
     ParamHelpers::makeNumericParam(id = "x1", lower = -5, upper = 10.1))
@@ -24,48 +24,39 @@ test_that("test if object works", {
   performance.fun = function(model) {
     problem(c(model[[1]], model[[2]]))
   }
-  obj = algorithm$new(
-    id = "branin",
-    configuration = sample.fun(par.set = configSpace, n.configs = 1)[[1]],
-    initial.budget = 0,
-    init.fun = init.fun,
-    train.fun = train.fun,
+  hyperhyper = hyperband(
+    max.perf = FALSE, 
+    max.ressources = 81, 
+    prop.discard = 3, 
+    id = "neural_net", 
+    par.set = configSpace, 
+    sample.fun =  sample.fun,
+    train.fun = train.fun, 
     performance.fun = performance.fun)
   
-  # check if obj is of class R6
-  expect_true(is.R6(obj))
-  expect_class(obj, "Algorithm")
+  # check if hyperhyper is of type list
+  expect_true(is.list(hyperhyper))
   
-  # check if budget is 10 if obj is trained for 10 iterations
-  obj$continue(10)
-  expect_integerish(obj$current.budget, lower = 10, upper = 10)
-  # check if configuration are between -5 and 10.1
-  expect_numeric(obj$configuration$x1, lower = -5, upper = 10.1)
-  # check if initialized models are between 0 and 15
-  expect_numeric(obj$model[[2]], lower = 0, upper = 15)
-  # check if performance is equal or greater than 0
-  expect_numeric(obj$getPerformance(), lower = 0)
-
-  ## recheck everything after 100 it  
-  # check if budget is 10 if obj is trained for 10 iterations
-  obj$continue(100)
-  expect_integerish(obj$current.budget, lower = 110, upper = 110)
-  # check if configuration are between -5 and 10.1
-  expect_numeric(obj$configuration$x1, lower = -5, upper = 10.1)
-  # check if initialized models are between 0 and 15
-  expect_numeric(obj$model[[2]], lower = 0, upper = 15)
-  # check if performance is equal or greater than 0
-  expect_numeric(obj$getPerformance(), lower = 0)  
+  # check if we obtain 5 brackets
+  expect_integerish(length(hyperhyper), lower = 5, upper = 5)
   
-  ## recheck everything after 1000 it  
-  # check if budget is 10 if obj is trained for 10 iterations
-  obj$continue(1000)
-  expect_integerish(obj$current.budget, lower = 1110, upper = 1110)
-  # check if configuration are between -5 and 10.1
-  expect_numeric(obj$configuration$x1, lower = -5, upper = 10.1)
-  # check if initialized models are between 0 and 15
-  expect_numeric(obj$model[[2]], lower = 0, upper = 15)
-  # check if performance is equal or greater than 0
-  expect_numeric(obj$getPerformance(), lower = 0) 
+  # check if all brackets have one model left
+  expect_integerish(length(hyperhyper[[1]]$models), lower = 1, upper = 1)
+  expect_integerish(length(hyperhyper[[2]]$models), lower = 1, upper = 1)
+  expect_integerish(length(hyperhyper[[3]]$models), lower = 1, upper = 1)
+  expect_integerish(length(hyperhyper[[4]]$models), lower = 1, upper = 1)
+  expect_integerish(length(hyperhyper[[5]]$models), lower = 1, upper = 1)
+  
+  # check if all brackets are of class R6/Bracket
+  expect_true(is.R6(hyperhyper[[1]]))
+  expect_class(hyperhyper[[1]], "Bracket")
+  expect_true(is.R6(hyperhyper[[2]]))
+  expect_class(hyperhyper[[2]], "Bracket")
+  expect_true(is.R6(hyperhyper[[3]]))
+  expect_class(hyperhyper[[3]], "Bracket")
+  expect_true(is.R6(hyperhyper[[4]]))
+  expect_class(hyperhyper[[4]], "Bracket")
+  expect_true(is.R6(hyperhyper[[5]]))
+  expect_class(hyperhyper[[5]], "Bracket")
 })
 

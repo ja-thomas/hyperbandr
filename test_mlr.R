@@ -31,11 +31,11 @@ print(problem)
 
 # config space
 configSpace = makeParamSet(
-    makeNumericParam(id = "learning.rate", lower = 0.05, upper = 0.3),
-    makeNumericParam(id = "momentum", lower = 0.7, upper = 0.99),
-    makeIntegerParam(id = "layers", lower = 1L, upper = 1L),
-    makeIntegerParam(id = "num.layer1", lower = 1L, upper = 8L),
-    makeDiscreteParam(id = "act1", c("tanh", "relu", "sigmoid")))
+  makeNumericParam(id = "learning.rate", lower = 0.05, upper = 0.3),
+  makeNumericParam(id = "momentum", lower = 0.7, upper = 0.99),
+  makeIntegerParam(id = "layers", lower = 1L, upper = 1L),
+  makeIntegerParam(id = "num.layer1", lower = 1L, upper = 8L),
+  makeDiscreteParam(id = "act1", c("tanh", "relu", "sigmoid")))
 
 # sample fun
 sample.fun = function(par.set, n.configs) {
