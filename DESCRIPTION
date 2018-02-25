@@ -5,7 +5,8 @@ Authors@R: person("Niklas", "Klein", email = "Niklas.Klein@posteo.de", role = c(
 Description: R6 implementation of hyperband optimization algorithm.
 Depends: R (>= 3.4.3),
     R6,
-    checkmate
+    checkmate,
+    BBmisc
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true
@@ -14,7 +15,6 @@ Suggests: knitr,
     testthat,
     smoof,
     mlr,
-    BBmisc,
     reshape2,
     checkmate
 VignetteBuilder: knitr
