@@ -1,22 +1,3 @@
-#############################################################################
-### R6 class to create algorithm objects
-#
-## An algorithm object is a generic R6 implementation to optimize problems with anytime algorithms (e.g. neural networks)
-#
-## inputs:
-#
-# id: unique id of the algorithm object
-# configuration: parameter configuration to use for the algorithm object
-# initial.budget: the budget to use for the initialization of the algorithm object
-# init.fun: a function initializing the algorithm object
-# train.fun: a function training the algorithm object
-# performance.fun: a function evaluating the algorithm object
-#
-## methods:
-#
-# continue: a function applying train.fun to retrain the model for <budget> iterations
-# getPerformance: a function applying performance.fun to evaluate the current model
-
 #' @title R6 class to create algorithm objects
 #' @format \code{\link{R6Class}} object
 #'
