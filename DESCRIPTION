@@ -3,7 +3,7 @@ Title: What the Package Does (one line, title case)
 Version: 0.1
 Authors@R: person("Niklas", "Klein", email = "Niklas.Klein@posteo.de", role = c("aut", "cre"))
 Description: R6 implementation of hyperband optimization algorithm.
-Depends: R (>= 3.4.3),
+Depends: R (>= 3.3.3),
     R6,
     checkmate,
     BBmisc

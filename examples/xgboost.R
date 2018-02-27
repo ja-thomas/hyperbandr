@@ -37,14 +37,15 @@ sample.fun = function(par.set, n.configs) {
 # init fun 
 init.fun = function(r, config) {
   watchlist = list(eval = dtest, train = dtrain)
-  mod = xgb.train(config, dtrain, nrounds = r, watchlist, verbose = 1)
+  capture.output({mod = xgb.train(config, dtrain, nrounds = r, watchlist, verbose = 1)})
   return(mod)
 }
 
 # train fun
 train.fun = function(mod, budget) {
   watchlist = list(eval = dtest, train = dtrain)
-  mod = xgb.train(xgb_model = mod, nrounds = budget, params = mod$params, dtrain, watchlist, verbose = 1)
+  capture.output({mod = xgb.train(xgb_model = mod, 
+    nrounds = budget, params = mod$params, dtrain, watchlist, verbose = 1)})
   return(mod)
 }
 
