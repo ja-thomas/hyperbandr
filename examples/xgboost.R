@@ -29,6 +29,9 @@ configSpace = makeParamSet(
   makeNumericParam("colsample_bytree", lower = 0.3, upper = 1, default = 0.6),
   makeNumericParam("subsample", lower = 0.3, upper = 1, default = 0.6))
 
+test = matrix(ncol = 3, nrow = 3)
+colnames(test) = names(configSpace$pars)
+
 # sample fun
 sample.fun = function(par.set, n.configs) {
   lapply(sampleValues(par = par.set, n = n.configs), function(x) x[!is.na(x)])
