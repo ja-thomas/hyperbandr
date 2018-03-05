@@ -105,7 +105,7 @@ hyperband2 = function(max.perf = TRUE, max.ressources = 81, prop.discard = 3, id
   # begin hyperband
   for(s in sMax:0) {
     catf("Beginning with bracket %s", s)
-    brack = bracket$new(
+    brack = bracket2$new(
       max.perf = max.perf,
       max.ressources = max.ressources,
       prop.discard = prop.discard,
@@ -115,7 +115,8 @@ hyperband2 = function(max.perf = TRUE, max.ressources = 81, prop.discard = 3, id
       par.set = par.set,
       sample.fun = sample.fun,
       train.fun = train.fun,
-      performance.fun = performance.fun
+      performance.fun = performance.fun, 
+      ...
     )
     brack$run()
     bracketWinners[[s + 1]] = brack

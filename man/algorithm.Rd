@@ -34,13 +34,11 @@ The function to carry out training}
 
 \item{\code{performance.fun}}{The function to measure the performance}
 }}
-
 \section{Methods}{
 
 \code{$continue(budget)} continue training for \code{budget} iterations  \cr
 \code{$getPerformance()} computes the performance of the model \cr
 }
-
 \examples{
 # simple example for the branin function (minimization problem)
 library("smoof")
@@ -104,3 +102,4 @@ opt = data.table(x1 = getGlobalOptimum(problem)$param$x1, x2 = getGlobalOptimum(
                shape = 4, colour = "blue", size = 5))
 }
 \keyword{datasets}
+

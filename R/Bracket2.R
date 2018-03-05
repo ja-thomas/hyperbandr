@@ -102,7 +102,7 @@
 #'   + geom_point(aes(x = brack$models[[1]]$model[[1]], y = brack$models[[1]]$model[[2]]), 
 #'                shape = 4, colour = "blue", size = 5))
 
-bracket2 = R6Class("Bracket2",
+bracket2 = R6Class("Bracket",
   public = list(
     id = NULL,
     par.set = NULL,
@@ -118,7 +118,7 @@ bracket2 = R6Class("Bracket2",
     iteration = 0,
     max.perf = NULL,
     initialize = function(max.perf, max.ressources, prop.discard, s, B, id, 
-        par.set, sample.fun, train.fun, performance.fun) {
+        par.set, sample.fun, train.fun, performance.fun, ...) {
       self$max.perf = max.perf
       self$id = id
       self$prop.discard = prop.discard
@@ -129,12 +129,13 @@ bracket2 = R6Class("Bracket2",
       self$configurations = sample.fun(par.set, self$n.configs)
       # initialize the models
       self$models = mapply(function(conf, name) {
-        algorithm$new(id = paste(id, name, sep = "."), 
+        algorithm2$new(id = paste(id, name, sep = "."), 
                       configuration = conf,
                       initial.budget = self$getBudgetAllocation(),
                       init.fun = init.fun, 
                       train.fun = train.fun, 
-                      performance.fun = performance.fun)
+                      performance.fun = performance.fun, 
+                      ...)
       }, conf = self$configurations, name = seq_len(self$n.configs))
     },
     # method to compute budget allocation at each step of successive halving 

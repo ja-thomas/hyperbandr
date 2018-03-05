@@ -36,13 +36,10 @@ configSpace = makeParamSet(
   makeNumericParam("colsample_bytree", lower = 0.3, upper = 1, default = 0.6),
   makeNumericParam("subsample", lower = 0.3, upper = 1, default = 0.6))
 
-# data base for MBO
-dataBase = data.frame(matrix(nrow = 0, ncol = length(configSpace$pars) + 1))
-
 # sample fun
-sample.fun = function(par.set, n.configs) {
+sample.fun = function(par.set, n.configs, ...) {
   # sample from configSpace
-  if (dim(dataBase)[[1]] < 81) {
+  if (dim(data.base$data.matrix)[[1]] < 81) {
     lapply(sampleValues(par = par.set, n = n.configs), function(x) x[!is.na(x)])
   } else {
   # make MBO from dataBase  
@@ -53,7 +50,7 @@ sample.fun = function(par.set, n.configs) {
     ctrl = setMBOControlInfill(ctrl, crit = crit.cb)
     opt.state = initSMBO(
       par.set = configSpace, 
-      design = dataBase, 
+      design = data.base$data.matrix, 
       control = ctrl,
       learner = surr.km,
       minimize = TRUE, 
@@ -67,26 +64,21 @@ sample.fun = function(par.set, n.configs) {
 }
 
 # init fun 
-init.fun = function(r, config) {
+init.fun = function(r, config, ...) {
   # watchlist for lazy performance evaluation (ha-ha)
   watchlist = list(eval = dtest, train = dtrain)
   # compute the actual xgboost model
   capture.output({mod = xgb.train(config, dtrain, nrounds = r, watchlist, verbose = 1)})
   # rbind the hyperparameters, the iterations and the performance to the dataBase
-  if (dim(dataBase)[[1]] < 81) {
-    dataBase = rbind(dataBase, c(unlist(unname(mod$params[1:length(configSpace$pars)])), 
+  if (dim(data.base$data.matrix)[[1]] < 81) {
+    data.base$writeDataBase(c(unlist(unname(mod$params[1:length(configSpace$pars)])), 
       performance.fun(mod)))
-    colnames(dataBase) = c(names(configSpace$pars), "y")
-    assign("dataBase", dataBase, envir = .GlobalEnv)
   }
   return(mod)
 }
 
-# mod1 = init.fun(r = 1, config = sample.fun(par.set = configSpace, n.configs = 1)[[1]])
-# dataBase
-
 # train fun
-train.fun = function(mod, budget) {
+train.fun = function(mod, budget, ...) {
   watchlist = list(eval = dtest, train = dtrain)
   capture.output({mod = xgb.train(xgb_model = mod, 
     nrounds = budget, params = mod$params, dtrain, watchlist, verbose = 1)})
@@ -148,7 +140,9 @@ brack$getPerformances()
 
 
 ## call hyperband
-hyperhyper = hyperband(
+data.base = database$new(configSpace)
+
+hyperhyper = hyperband2(
   max.perf = FALSE, 
   max.ressources = 81, 
   prop.discard = 3, 
@@ -156,10 +150,12 @@ hyperhyper = hyperband(
   par.set = configSpace, 
   sample.fun =  sample.fun,
   train.fun = train.fun, 
-  performance.fun = performance.fun)
+  performance.fun = performance.fun,
+  # Additional arguments by ...
+  data.base = data.base)
 
 # get performance arbitrary bracket
-hyperhyper[[2]]$getPerformances()
+hyperhyper[[5]]$getPerformances()
 # verify iterations 
 hyperhyper[[4]]$models[[1]]$model$niter
   

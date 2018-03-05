@@ -165,7 +165,7 @@ myNeuralNetBenchmark = benchmarkThis(10, precision = 6)
 
 # visualize the results
 ggplot(stack(myNeuralNetBenchmark), aes(x = ind, y = values, fill = ind)) + 
-  scale_x_discrete(labels=c("bracket 1","bracket 2","bracket 3","bracket 4", "bracket 5")) + 
+  scale_x_discrete(labels=c("bracket 1", "bracket 2", "bracket 3", "bracket 4", "bracket 5")) + 
   theme(legend.position = "none") + labs(x = "", y = "performance") + 
   scale_y_continuous(limits = c(0, 1)) +
   geom_boxplot()
