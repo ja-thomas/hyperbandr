@@ -11,15 +11,22 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Hyperbandr Package
+# Hyperbandr Package
 
-This is an R6 implementation of the original hyperband algorithm  <https://arxiv.org/abs/1603.06560>.
+This is an R6 implementation of the original **hyperband** algorithm  <https://arxiv.org/abs/1603.06560>.
 
 R6 is an encapsulated object oriented system akin to those in Java or C++, where objects contain methods in addition to data, and those methods can modify objects directly (unlike S3 and S4 which are both functional object-oriented systems, where class methods are separate from objects, and objects are not mutable).
 
 Essentially, that means that we obtain a very generic implementation, which is working with every other R package (as long the algorithm meets the requirements of hyperband).
 
-## Simple example: optimize the branin function
+## This tutorial consists of three examples:
+
+* hyperbandr to optimize the **branin function**
+* hyperbandr to optimize **xgboost**
+* hyperbandr to optimize a **neural network**
+
+\newpage
+## Example 1: hyperbandr to optimize the **branin function**
 
 ```{r, echo = TRUE, message = FALSE}
 library("smoof")
@@ -39,7 +46,7 @@ opt = data.table(x1 = getGlobalOptimum(problem)$param$x1,
 
 ```
 
-We treat the value of $x_1$ as our "configuration" and try to find the optimal value for our "hyperparameter" $x_2$ (reminder: in hyperband, we have to sample configurations for each bracket)
+We treat the value of $x_1$ as our "configuration" and try to find the optimal value for $x_2$, our "hyperparameter" (reminder: in hyperband we sample random configurations in each bracket).
 
 So in order to apply $\textbf{hyperbandr}$ on that problem, we need to define a hyperparameter space and four specific functions.
 
