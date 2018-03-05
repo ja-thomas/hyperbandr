@@ -21,6 +21,8 @@
 #' An id for each Algorithm object in the bracket object
 #' @field par.set \cr
 #' The parameter set to sample from
+#' @field sample.fun \cr
+#' The function to sample from par.set
 #' @field train.fun \cr
 #' The function to carry out training
 #' @field performance.fun
@@ -36,11 +38,75 @@
 #' @return Bracket object
 #' @export
 #' @examples
+#' # simple example for the branin function (minimization problem)
+#' library("smoof")
+#' problem = makeBraninFunction()
+#' 
+#' # configuration space:
+#' configSpace = makeParamSet(
+#'   makeNumericParam(id = "x1", lower = -5, upper = 10.1))
+#'   
+#' # sampling function:
+#' sample.fun = function(par.set, n.configs) {
+#'  sampleValues(par = par.set, n = n.configs)
+#' }
+#'  
+#' # model initialization function:
+#' init.fun = function(r, config) {
+#'   x1 = unname(unlist(config))
+#'   x2 = runif(1, 0, 15)
+#'   mod = c(x1, x2)
+#'   return(mod)
+#' }
+#' 
+#' # training function:
+#' train.fun = function(mod, budget) {
+#'   for(i in seq_len(budget)) {
+#'     mod.new = c(mod[[1]], mod[[2]] + rnorm(1, sd = 3))
+#'     if(performance.fun(mod.new) < performance.fun(mod))
+#'       mod = mod.new
+#'   }
+#'   return(mod)
+#' }
+#' 
+#' # performance function:
+#' performance.fun = function(model) {
+#'   problem(c(model[[1]], model[[2]]))
+#' }
+#' 
+#' # create bracket s = 4 with hyperbands recommended parameters
+#' brack = bracket$new(
+#'   max.perf = FALSE,
+#'   max.ressources = 81,
+#'   prop.discard = 3, 
+#'   s = 4, 
+#'   B = (4 + 1)*81,
+#'   id = "branin",
+#'   par.set = configSpace,
+#'   sample.fun = sample.fun,
+#'   train.fun = train.fun,
+#'   performance.fun = performance.fun
+#' )
+#' 
+#' # carry out successive halving:
+#' brack$run()
+#' 
+#' # get the performance of the remaining (best) model
+#' brack$getPerformances()
+#' 
+#' # visualize the results (red: global minima, blue: result of the bracket)
+#' opt = data.table(x1 = getGlobalOptimum(problem)$param$x1, x2 = getGlobalOptimum(problem)$param$x2)
+#' (vis = autoplot(problem) 
+#'   + geom_point(data = opt, aes(x = x1, y = x2), 
+#'                shape = 4, colour = "red", size = 5) 
+#'   + geom_point(aes(x = brack$models[[1]]$model[[1]], y = brack$models[[1]]$model[[2]]), 
+#'                shape = 4, colour = "blue", size = 5))
 
-bracketMBO = R6Class("BracketMBO",
+bracket2 = R6Class("Bracket2",
   public = list(
     id = NULL,
     par.set = NULL,
+    sample.fun = NULL,
     configurations = NULL,
     max.ressources = NULL,
     models = NULL,
@@ -52,7 +118,7 @@ bracketMBO = R6Class("BracketMBO",
     iteration = 0,
     max.perf = NULL,
     initialize = function(max.perf, max.ressources, prop.discard, s, B, id, 
-        par.set, train.fun, performance.fun) {
+        par.set, sample.fun, train.fun, performance.fun) {
       self$max.perf = max.perf
       self$id = id
       self$prop.discard = prop.discard
@@ -60,7 +126,7 @@ bracketMBO = R6Class("BracketMBO",
       self$B = B
       self$n.configs = ceiling((self$B / max.ressources) * (prop.discard^s / (s + 1)))
       self$r.config = max.ressources * prop.discard^(-s)
-      self$configurations = par.set
+      self$configurations = sample.fun(par.set, self$n.configs)
       # initialize the models
       self$models = mapply(function(conf, name) {
         algorithm$new(id = paste(id, name, sep = "."), 
