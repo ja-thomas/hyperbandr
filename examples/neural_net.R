@@ -4,7 +4,8 @@
 
 library("devtools")
 load_all()
-library("mlr")
+library("mxnet") 
+library("mlr") # you might need to install mxnet branch of mlr: devtools::install_github("mlr-org/mlr", ref = "mxnet")
 library("ggplot2")
 library("data.table")
 
@@ -53,7 +54,7 @@ sample.fun = function(par.set, n.configs) {
 
 # init fun
 init.fun = function(r, config) {
-  lrn = makeLearner("classif.mxff", begin.round = 1, num.round = 1, par.vals = config)
+  lrn = makeLearner("classif.mxff", begin.round = 1, num.round = r, par.vals = config)
   mod = train(learner = lrn, task = problem, subset = train.set)
   return(mod)
 }
@@ -100,7 +101,7 @@ obj$continue(10)
 obj$getPerformance()
 
 
-## make branin bracket object
+## make neural net bracket object
 brack = bracket$new(
   max.perf = TRUE,
   max.ressources = 81,
@@ -160,10 +161,10 @@ benchmarkThis = function(howManyIt, precision) {
 }
 
 # make 10 iterations (depending on your hardware this might take some time)
-myxgboostBenchmark = benchmarkThis(10, precision = 6)
+myNeuralNetBenchmark = benchmarkThis(10, precision = 6)
 
 # visualize the results
-ggplot(stack(myxgboostBenchmark), aes(x = ind, y = values, fill = ind)) + 
+ggplot(stack(myNeuralNetBenchmark), aes(x = ind, y = values, fill = ind)) + 
   scale_x_discrete(labels=c("bracket 1","bracket 2","bracket 3","bracket 4", "bracket 5")) + 
   theme(legend.position = "none") + labs(x = "", y = "performance") + 
   scale_y_continuous(limits = c(0, 1)) +
