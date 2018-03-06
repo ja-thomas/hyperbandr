@@ -24,7 +24,7 @@ dtest = xgb.DMatrix(agaricus.test$data, label = agaricus.test$label)
 ## define functions for hyperbandMBO ##
 #######################################
 
-# # config space
+# config space
 # configSpace = makeParamSet(
 #   makeIntegerParam("max_depth", lower = 3, upper = 15, default = 3),
 #   makeNumericParam("colsample_bytree", lower = 0.3, upper = 1, default = 0.6),
@@ -36,6 +36,9 @@ configSpace = makeParamSet(
   makeNumericParam("colsample_bytree", lower = 0.3, upper = 1, default = 0.6),
   makeNumericParam("subsample", lower = 0.3, upper = 1, default = 0.6))
 
+# create new database object
+data.base = database$new(configSpace)
+
 # sample fun
 sample.fun = function(par.set, n.configs, ...) {
   # sample from configSpace
@@ -43,7 +46,7 @@ sample.fun = function(par.set, n.configs, ...) {
     lapply(sampleValues(par = par.set, n = n.configs), function(x) x[!is.na(x)])
   } else {
   # make MBO from dataBase  
-    catf("Proposing points buddy")  
+    catf("Proposing points")  
     surr.km = makeLearner("regr.km", predict.type = "se", covtype = "matern3_2", 
       control = list(trace = FALSE))
     ctrl = makeMBOControl(propose.points = n.configs)
@@ -69,9 +72,9 @@ init.fun = function(r, config, ...) {
   watchlist = list(eval = dtest, train = dtrain)
   # compute the actual xgboost model
   capture.output({mod = xgb.train(config, dtrain, nrounds = r, watchlist, verbose = 1)})
-  # rbind the hyperparameters, the iterations and the performance to the dataBase
+  # rbind the hyperparameters and the performance to the dataBase
   if (dim(data.base$data.matrix)[[1]] < 81) {
-    data.base$writeDataBase(c(unlist(unname(mod$params[1:length(configSpace$pars)])), 
+    data.base$writeDataBase(c(unlist(unname(mod$params[1:length(configSpace$pars)])),
       performance.fun(mod)))
   }
   return(mod)
@@ -82,6 +85,11 @@ train.fun = function(mod, budget, ...) {
   watchlist = list(eval = dtest, train = dtrain)
   capture.output({mod = xgb.train(xgb_model = mod, 
     nrounds = budget, params = mod$params, dtrain, watchlist, verbose = 1)})
+  # rbind the hyperparameters and the performance to the dataBase
+  # if (dim(data.base$data.matrix)[[1]] < 121) {
+  #   data.base$writeDataBase(c(unlist(unname(mod$params[1:length(configSpace$pars)])),
+  #     performance.fun(mod)))
+  # }
   return(mod)
 }
 
@@ -140,8 +148,6 @@ brack$getPerformances()
 
 
 ## call hyperband
-data.base = database$new(configSpace)
-
 hyperhyper = hyperband2(
   max.perf = FALSE, 
   max.ressources = 81, 
@@ -155,7 +161,12 @@ hyperhyper = hyperband2(
   data.base = data.base)
 
 # get performance arbitrary bracket
+hyperhyper[[1]]$getPerformances()
+hyperhyper[[2]]$getPerformances()
+hyperhyper[[3]]$getPerformances()
+hyperhyper[[4]]$getPerformances()
 hyperhyper[[5]]$getPerformances()
+
 # verify iterations 
 hyperhyper[[4]]$models[[1]]$model$niter
   
