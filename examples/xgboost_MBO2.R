@@ -47,17 +47,16 @@ sample.fun = function(par.set, n.configs, ...) {
   } else {
   # make MBO from dataBase  
     catf("Proposing points")  
-    surr.km = makeLearner("regr.km", predict.type = "se", covtype = "matern3_2", 
-      control = list(trace = FALSE))
+    #surr.km = makeLearner("regr.km", predict.type = "se", covtype = "matern3_2", control = list(trace = FALSE))
     ctrl = makeMBOControl(propose.points = n.configs)
     ctrl = setMBOControlInfill(ctrl, crit = crit.cb)
     opt.state = initSMBO(
       par.set = configSpace, 
       design = data.base$data.matrix, 
       control = ctrl,
-      learner = surr.km,
+      #learner = surr.km,
       minimize = TRUE, 
-      noisy = FALSE)
+      noisy = TRUE)
     prop = proposePoints(opt.state)
     propPoints = prop$prop.points
     rownames(propPoints) = c()
@@ -86,10 +85,10 @@ train.fun = function(mod, budget, ...) {
   capture.output({mod = xgb.train(xgb_model = mod, 
     nrounds = budget, params = mod$params, dtrain, watchlist, verbose = 1)})
   # rbind the hyperparameters and the performance to the dataBase
-  # if (dim(data.base$data.matrix)[[1]] < 121) {
-  #   data.base$writeDataBase(c(unlist(unname(mod$params[1:length(configSpace$pars)])),
-  #     performance.fun(mod)))
-  # }
+  if (dim(data.base$data.matrix)[[1]] < 121) {
+    data.base$writeDataBase(c(unlist(unname(mod$params[1:length(configSpace$pars)])),
+      performance.fun(mod)))
+  }
   return(mod)
 }
 
