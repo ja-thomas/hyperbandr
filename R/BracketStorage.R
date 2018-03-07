@@ -1,12 +1,8 @@
-# R6 class 
-## creates data matrix 
-## rbinds results
-
-#' @title R6 class to create database objects
+#' @title R6 class to create bracketStorage objects
 #' @format \code{\link{R6Class}} object
 #'
 #' @description
-#' An \code{\link[R6]{R6Class}} to save hyperband results
+#' An \code{\link[R6]{R6Class}} to save the results from each bracket
 #' 
 #' @field configSpace [\code{string}]\cr
 #' A configuration space constructed with makeParamSet from package ParamHelpers
@@ -18,18 +14,19 @@
 #' @export
 #' @examples
 
-database = R6Class("DataBase",
+bracketStorage = R6Class("bracketStorage",
   public = list(
     data.matrix = NULL,
     col.names = NULL,
-    # initialize the database object as a data fame with 0 rows
-    initialize = function(configSpace) {
-      self$data.matrix = data.frame(matrix(nrow = 0, ncol = length(configSpace$pars) + 1))
-      self$col.names = c(names(configSpace$pars), "y")
+    # initialize the bracketStorage object as a data fame 
+    initialize = function(model.list, par.set) {
+      self$data.matrix = data.frame(matrix(unlist(lapply(model.list, function(x) x$algorithm.result)), 
+        ncol = (length(par.set$pars) + 1), byrow = TRUE))
+      self$col.names = c(names(par.set$pars), "y")
       colnames(self$data.matrix) = self$col.names
     },
     # method to rbind a new line to the data.matrix
-    writeDataBase = function(newline) {
+    writeBracketStorage = function(newline) {
       self$data.matrix = rbind(self$data.matrix, newline)
       colnames(self$data.matrix) = self$col.names
     }

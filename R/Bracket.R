@@ -117,8 +117,10 @@ bracket = R6Class("Bracket",
     r.config = NULL,
     iteration = 0,
     max.perf = NULL,
+    bracket.storage = NULL,
+    ## initialize the bracket object
     initialize = function(max.perf, max.ressources, prop.discard, s, B, id, 
-        par.set, sample.fun, train.fun, performance.fun) {
+        par.set, sample.fun, train.fun, performance.fun, ...) {
       self$max.perf = max.perf
       self$id = id
       self$prop.discard = prop.discard
@@ -126,46 +128,30 @@ bracket = R6Class("Bracket",
       self$B = B
       self$n.configs = ceiling((self$B / max.ressources) * (prop.discard^s / (s + 1)))
       self$r.config = max.ressources * prop.discard^(-s)
-      self$configurations = sample.fun(par.set, self$n.configs)
-      # initialize the models
+      self$par.set = par.set
+      self$configurations = sample.fun(self$par.set, self$n.configs)
+      # create the models
       self$models = mapply(function(conf, name) {
         algorithm$new(id = paste(id, name, sep = "."), 
                       configuration = conf,
                       initial.budget = self$getBudgetAllocation(),
                       init.fun = init.fun, 
                       train.fun = train.fun, 
-                      performance.fun = performance.fun)
+                      performance.fun = performance.fun, 
+                      ...)
       }, conf = self$configurations, name = seq_len(self$n.configs))
+      # initialize bracket storage
+      self$bracket.storage = bracketStorage$new(self$models, self$par.set)
     },
-    # method to compute budget allocation at each step of successive halving 
+    ## method to compute budget allocation at each step of successive halving 
     getBudgetAllocation = function() {
       self$r.config*self$prop.discard^(self$iteration)
     },
-    # method to compute the number of models to keep after each step of successive halving 
+    ## method to compute the number of models to keep after each step of successive halving 
     getNumberOfModelsToSelect = function() {
       floor(self$n.configs / self$prop.discard)
     },
-    # method to compute one step of successive halving
-    step = function() {
-      self$iteration = self$iteration + 1
-      self$filterTopKModels(self$getNumberOfModelsToSelect())
-      lapply(self$models, function(x) x$continue(self$getBudgetAllocation()))
-      invisible(NULL)
-    },
-    # method to compute all steps of successive halving (e.g. compute one bracket)
-    run = function() {
-      for (st in seq_len(self$s)) {
-        self$printState()
-        self$step()
-      }
-      self$filterTopKModels(k = 1)
-      self$printState()
-    },
-    # method to obtain the performance of the remaining models
-    getPerformances = function() {
-      vapply(self$models, function(x) x$getPerformance(), numeric(1))
-    },
-    # method to display the top k models
+    ## method to display the top k models
     getTopKModels = function(k) {
       if (self$max.perf == TRUE) {
         perfs = self$getPerformances()
@@ -175,13 +161,35 @@ bracket = R6Class("Bracket",
         self$models[order(perfs)][1:k]
       }
     },
-    # method to filter the top k models
+    ## method to filter the top k models
     filterTopKModels = function(k) {
       self$models = self$getTopKModels(k = k)
       self$n.configs = k
       invisible(NULL)
     },
-    # method to print the current state of successive halving
+    ## method to compute one step of successive halving
+    step = function() {
+      self$iteration = self$iteration + 1
+      self$filterTopKModels(self$getNumberOfModelsToSelect())
+      lapply(self$models, function(x) x$continue(self$getBudgetAllocation()))
+      # add models
+      self$bracket.storage$writeBracketStorage(bracketStorage$new(self$models, self$par.set)$data.matrix)
+      invisible(NULL)
+    },
+    ## method to compute all steps of successive halving (e.g. compute one bracket)
+    run = function() {
+      for (st in seq_len(self$s)) {
+        self$printState()
+        self$step()
+      }
+      self$filterTopKModels(k = 1)
+      self$printState()
+    },
+    ## method to obtain the performance of the remaining models
+    getPerformances = function() {
+      vapply(self$models, function(x) x$getPerformance(), numeric(1))
+    },
+    ## method to print the current state of successive halving
     printState = function() {
       catf("Iteration %i, with %i Algorithms left (Budget: %i)", self$iteration, self$n.configs, 
         self$models[[1]]$current.budget)

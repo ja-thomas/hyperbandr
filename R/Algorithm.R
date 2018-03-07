@@ -85,7 +85,7 @@
 #'   + geom_point(aes(x = obj$model[[1]], y = obj$model[[2]]), 
 #'                shape = 4, colour = "blue", size = 5))
 
-algorithm = R6Class("Algorithm",
+algorithm = R6Class("Algorithm2",
   public = list(
     id = NULL,
     configuration = NULL,
@@ -93,19 +93,24 @@ algorithm = R6Class("Algorithm",
     model = NULL,
     train.fun = NULL,
     performance.fun = NULL,
-    initialize = function(id, configuration, initial.budget, init.fun, train.fun, performance.fun) {
+    algorithm.result = NULL,
+    initialize = function(id, configuration, initial.budget, init.fun, train.fun, performance.fun, ...) {
       ##FIXME: argchecks
       self$id = id
       self$configuration = configuration
       self$current.budget = initial.budget
-      self$model = init.fun(initial.budget, configuration)
+      self$model = init.fun(initial.budget, configuration, ...)
       self$train.fun = train.fun
       self$performance.fun = performance.fun
+      self$algorithm.result = c(unlist(self$configuration), self$getPerformance())
+      names(self$algorithm.result) = c(rev(rev(names(self$algorithm.result))[-1]), "y")
     },
-    continue = function(budget) {
+    continue = function(budget, ...) {
       ##FIXME: argchecks
-      self$model = self$train.fun(self$model, budget)
+      self$model = self$train.fun(self$model, budget, ...)
       self$current.budget = self$current.budget + budget
+      self$algorithm.result = c(unlist(self$configuration), self$getPerformance())
+      names(self$algorithm.result) = c(rev(rev(names(self$algorithm.result))[-1]), "y")
       invisible(NULL)
     },
     getPerformance = function() {
