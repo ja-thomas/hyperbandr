@@ -85,7 +85,7 @@
 #'   + geom_point(aes(x = obj$model[[1]], y = obj$model[[2]]), 
 #'                shape = 4, colour = "blue", size = 5))
 
-algorithm = R6Class("Algorithm2",
+algorithm = R6Class("Algorithm",
   public = list(
     id = NULL,
     configuration = NULL,

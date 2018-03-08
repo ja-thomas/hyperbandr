@@ -141,7 +141,9 @@ bracket = R6Class("Bracket",
                       ...)
       }, conf = self$configurations, name = seq_len(self$n.configs))
       # initialize bracket storage
-      self$bracket.storage = bracketStorage$new(self$models, self$par.set)
+      bracket.storage = bracketStorage$new(self$models, self$par.set)
+      nameBracket = paste0("bracket.storage", self$s)
+      assign(nameBracket, bracket.storage, envir = .GlobalEnv)
     },
     ## method to compute budget allocation at each step of successive halving 
     getBudgetAllocation = function() {
@@ -173,7 +175,9 @@ bracket = R6Class("Bracket",
       self$filterTopKModels(self$getNumberOfModelsToSelect())
       lapply(self$models, function(x) x$continue(self$getBudgetAllocation()))
       # add models
-      self$bracket.storage$writeBracketStorage(bracketStorage$new(self$models, self$par.set)$data.matrix)
+      bracket.storage$writeBracketStorage(bracketStorage$new(self$models, self$par.set)$data.matrix)
+      nameBracket = paste0("bracket.storage", self$s)
+      assign(nameBracket, bracket.storage, envir = .GlobalEnv)
       invisible(NULL)
     },
     ## method to compute all steps of successive halving (e.g. compute one bracket)

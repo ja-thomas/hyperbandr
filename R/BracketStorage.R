@@ -12,7 +12,6 @@
 #'
 #' @return Algorithm object
 #' @export
-#' @examples
 
 bracketStorage = R6Class("bracketStorage",
   public = list(

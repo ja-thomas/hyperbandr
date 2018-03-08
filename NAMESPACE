@@ -2,6 +2,5 @@
 
 export(algorithm)
 export(bracket)
-export(bracket2)
+export(bracketStorage)
 export(hyperband)
-export(hyperband2)

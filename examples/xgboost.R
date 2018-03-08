@@ -115,6 +115,10 @@ hyperhyper = hyperband(
   performance.fun = performance.fun)
 
 # get performance arbitrary bracket
+hyperhyper[[1]]$getPerformances()
+hyperhyper[[2]]$getPerformances()
+hyperhyper[[3]]$getPerformances()
+hyperhyper[[4]]$getPerformances()
 hyperhyper[[5]]$getPerformances()
 
 
