@@ -124,10 +124,11 @@ brack$getPerformances()
 
 ## call hyperband
 hyperhyper = hyperband(
-  max.perf = TRUE, 
   max.ressources = 81, 
-  prop.discard = 3, 
-  id = "neural_net", 
+  prop.discard = 3,  
+  max.perf = FALSE,
+  export.bracket.storage = TRUE,
+  id = "xgboost", 
   par.set = configSpace, 
   sample.fun =  sample.fun,
   train.fun = train.fun, 
@@ -143,10 +144,11 @@ benchmarkThis = function(howManyIt, precision) {
   for (i in 1:howManyIt) {
     catf("Iteration %i", i)
     hyperhyper = hyperband(
-      max.perf = TRUE, 
       max.ressources = 81, 
-      prop.discard = 3, 
-      id = "neural_net", 
+      prop.discard = 3,  
+      max.perf = FALSE,
+      export.bracket.storage = TRUE,
+      id = "xgboost", 
       par.set = configSpace, 
       sample.fun =  sample.fun,
       train.fun = train.fun, 

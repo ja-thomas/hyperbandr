@@ -4,43 +4,53 @@
 
 library("devtools")
 load_all()
-library("mlr")
-library("mlrMBO")
-library("xgboost")
+library("mxnet") 
+library("mlr") # you might need to install mxnet branch of mlr: devtools::install_github("mlr-org/mlr", ref = "mxnet")
 library("ggplot2")
+library("data.table")
 
+
+####################################
+## define the problem to optimize ##
+####################################
+
+# read mini_mnist (1/10 of actual mnist for faster evaluation, evenly distributed classes)
+train = fread("mnist/train.csv", header = TRUE)
+test = fread("mnist/test.csv", header = TRUE)
+
+# Some operations to normalize features
+mnist = as.data.frame(rbind(train, test))
+mnist = mnist[sample(nrow(mnist)), ]
+mnist[, 2:785] = lapply(mnist[, 2:785], function(x) x/255) 
+rm(train)
+rm(test)
+
+# Generate train and test split
+train.set = sample(nrow(mnist), size = (2/3)*nrow(mnist))
+test.set = setdiff(1:nrow(mnist), train.set)
+
+# mini-mnist has 10 classes
+problem = makeClassifTask(data = mnist, target = "label")
+
+# each class has 600 samples
+print(problem)
 
 #######################################
-#### define the problem to optimize ###
-#######################################
-
-data(agaricus.train)
-data(agaricus.test)
-dtrain = xgb.DMatrix(agaricus.train$data, label = agaricus.train$label)
-dtest = xgb.DMatrix(agaricus.test$data, label = agaricus.test$label)
-
- 
-#######################################
-## define functions for hyperbandMBO ##
+## define functions to use hyperband ##
 #######################################
 
 # config space
-# configSpace = makeParamSet(
-#   makeIntegerParam("max_depth", lower = 3, upper = 15, default = 3),
-#   makeNumericParam("colsample_bytree", lower = 0.3, upper = 1, default = 0.6),
-#   makeNumericParam("subsample", lower = 0.3, upper = 1, default = 0.6),
-#   makeNumericParam("nrounds", lower = 1, upper = 1))
-
 configSpace = makeParamSet(
-  makeIntegerParam("max_depth", lower = 3, upper = 15, default = 3),
-  makeNumericParam("colsample_bytree", lower = 0.3, upper = 1, default = 0.6),
-  makeNumericParam("subsample", lower = 0.3, upper = 1, default = 0.6))
+  makeNumericParam(id = "learning.rate", lower = 0.05, upper = 0.3),
+  makeNumericParam(id = "momentum", lower = 0.7, upper = 0.99),
+  makeIntegerParam(id = "layers", lower = 1L, upper = 1L),
+  makeIntegerParam(id = "num.layer1", lower = 1L, upper = 8L),
+  makeDiscreteParam(id = "act1", c("tanh", "relu", "sigmoid")))
 
 # sample fun
-sample.fun = function(par.set, n.configs, ...) {
-  # sample from configSpace
+sample.fun = function(par.set, n.configs) {
   if (!exists("bracket.storage4", envir = .GlobalEnv)) {
-    lapply(sampleValues(par = par.set, n = n.configs), function(x) x[!is.na(x)])
+    sampleValues(par = par.set, n = n.configs)
   } else {
   # make MBO from dataBase  
     catf("Proposing points")
@@ -48,50 +58,53 @@ sample.fun = function(par.set, n.configs, ...) {
     ctrl = setMBOControlInfill(ctrl, crit = crit.cb)
     opt.state = initSMBO(
       par.set = configSpace, 
-      design = bracket.storage4,
+      design = bracket.storage4, 
       control = ctrl,
       minimize = TRUE, 
-      noisy = FALSE)
+      noisy = TRUE)
     prop = proposePoints(opt.state)
     propPoints = prop$prop.points
     rownames(propPoints) = c()
     propPoints = convertRowsToList(propPoints, name.list = FALSE, name.vector = TRUE)
-    return(propPoints)
+    return(propPoints)    
   }
 }
 
-# init fun 
-init.fun = function(r, config, ...) {
-  # watchlist for lazy performance evaluation (ha-ha)
-  watchlist = list(eval = dtest, train = dtrain)
-  # compute the actual xgboost model
-  capture.output({mod = xgb.train(config, dtrain, nrounds = r, watchlist, verbose = 1)})
+# init fun
+init.fun = function(r, config) {
+  lrn = makeLearner("classif.mxff", begin.round = 1, num.round = r, par.vals = config)
+  mod = train(learner = lrn, task = problem, subset = train.set)
   return(mod)
 }
 
 # train fun
-train.fun = function(mod, budget, ...) {
-  watchlist = list(eval = dtest, train = dtrain)
-  capture.output({mod = xgb.train(xgb_model = mod, 
-    nrounds = budget, params = mod$params, dtrain, watchlist, verbose = 1)})
+train.fun = function(mod, budget) {
+  lrn = makeLearner("classif.mxff", par.vals = mod$learner$par.vals)
+  lrn = setHyperPars(lrn,
+    symbol = mod$learner.model$symbol,
+    arg.params = mod$learner.model$arg.params,
+    aux.params = mod$learner.model$aux.params,
+    begin.round = mod$learner$par.vals$begin.round + mod$learner$par.vals$num.round,
+    num.round = budget)
+  mod = train(learner = lrn, task = problem, subset = train.set)
   return(mod)
 }
 
 # performance fun
 performance.fun = function(model) {
-  tail(model$evaluation_log$eval_rmse, n = 1)
+  pred = predict(model, task = problem, subset = test.set)
+  performance(pred, measures = acc)
 }
-
 
 #######################################
 ############# applications ############
 #######################################
 
-## make xgboost algorithm object
+## make neural net algorithm object
 obj = algorithm$new(
-  id = "xgboost",
+  id = "neural_net",
   configuration = sample.fun(par.set = configSpace, n.configs = 1)[[1]],
-  initial.budget = 1,
+  initial.budget = 0,
   init.fun = init.fun,
   train.fun = train.fun,
   performance.fun = performance.fun)
@@ -100,24 +113,20 @@ obj = algorithm$new(
 obj$model
 # inspect performance
 obj$getPerformance()
-# verify iterations
-obj$model$niter
 # continue training for 10 iterations
 obj$continue(10)
-# verify iterations again
-obj$model$niter
 # inspect performance again
 obj$getPerformance()
 
 
-## make xgboost bracket object
+## make neural net bracket object
 brack = bracket$new(
-  max.perf = FALSE,
+  max.perf = TRUE,
   max.ressources = 81,
   prop.discard = 3,
   s = 4,
   B = (4 + 1)*81,
-  id = "xgboost",
+  id = "neural_net",
   par.set = configSpace,
   sample.fun = sample.fun,
   train.fun = train.fun,
@@ -144,21 +153,13 @@ hyperhyper = hyperband(
   performance.fun = performance.fun)
 
 # get performance arbitrary bracket
-hyperhyper[[1]]$getPerformances()
-hyperhyper[[2]]$getPerformances()
 hyperhyper[[3]]$getPerformances()
-hyperhyper[[4]]$getPerformances()
-hyperhyper[[5]]$getPerformances()
-
-# verify iterations 
-hyperhyper[[4]]$models[[1]]$model$niter
 
 
-## make benchmark experiment
+## make benchmark experiment 
 benchmarkThis = function(howManyIt, precision) {
   results = data.frame(matrix(ncol = 5, nrow = howManyIt))
   for (i in 1:howManyIt) {
-    dataBase = data.frame(matrix(nrow = 0, ncol = length(configSpace$pars) + 1))
     catf("Iteration %i", i)
     hyperhyper = hyperband(
       max.ressources = 81, 
@@ -179,12 +180,13 @@ benchmarkThis = function(howManyIt, precision) {
   return(results)
 }
 
-# make 100 iterations
-xgboostMBOBenchmark = benchmarkThis(10, precision = 6)
+# make 10 iterations (depending on your hardware this might take some time)
+myNeuralNetBenchmark = benchmarkThis(10, precision = 6)
 
 # visualize the results
-ggplot(stack(xgboostMBOBenchmark), aes(x = ind, y = values, fill = ind)) + 
+ggplot(stack(myNeuralNetBenchmark), aes(x = ind, y = values, fill = ind)) + 
   scale_x_discrete(labels=c("bracket 1", "bracket 2", "bracket 3", "bracket 4", "bracket 5")) + 
   theme(legend.position = "none") + labs(x = "", y = "performance") + 
+  scale_y_continuous(limits = c(0, 1)) +
   geom_boxplot()
 

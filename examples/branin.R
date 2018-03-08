@@ -107,16 +107,21 @@ brack$getPerformances()
 
 ## call hyperband
 hyperhyper = hyperband(
-  max.perf = FALSE, 
   max.ressources = 81, 
-  prop.discard = 3, 
-  id = "branin", 
+  prop.discard = 3,  
+  max.perf = FALSE,
+  export.bracket.storage = TRUE,
+  id = "xgboost", 
   par.set = configSpace, 
   sample.fun =  sample.fun,
   train.fun = train.fun, 
   performance.fun = performance.fun)
 
 # get performance arbitrary bracket
+hyperhyper[[1]]$getPerformances()
+hyperhyper[[2]]$getPerformances()
+hyperhyper[[3]]$getPerformances()
+hyperhyper[[4]]$getPerformances()
 hyperhyper[[5]]$getPerformances()
 
 # visualize results of all brackets
@@ -143,10 +148,11 @@ benchmarkThis = function(howManyIt, precision) {
   for (i in 1:howManyIt) {
     catf("Iteration %i", i)
     hyperhyper = hyperband(
-      max.perf = FALSE, 
       max.ressources = 81, 
-      prop.discard = 3, 
-      id = "branin", 
+      prop.discard = 3,  
+      max.perf = FALSE,
+      export.bracket.storage = TRUE,
+      id = "xgboost", 
       par.set = configSpace, 
       sample.fun =  sample.fun,
       train.fun = train.fun, 
@@ -161,7 +167,7 @@ benchmarkThis = function(howManyIt, precision) {
 }
 
 # make 100 iterations
-braninBenchmark = benchmarkThis(100, precision = 6)
+braninBenchmark = benchmarkThis(10, precision = 6)
 
 # visualize the results
 ggplot(stack(braninBenchmark), aes(x = ind, y = values, fill = ind)) + 

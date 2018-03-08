@@ -95,7 +95,8 @@
 #'                    y = hyperhyper[[5]]$models[[1]]$model[2]),
 #'                shape = 4, colour = "blue", size = 5))
 
-hyperband = function(max.perf = TRUE, max.ressources = 81, prop.discard = 3, id, 
+hyperband = function(max.ressources = 81, prop.discard = 3, 
+  max.perf = TRUE, export.bracket.storage = FALSE, id, 
   par.set,  sample.fun, train.fun, performance.fun) { 
   # |sMax + 1| are the total number of brackets to try 
   sMax =  floor(log(max.ressources, base = prop.discard))
@@ -118,6 +119,10 @@ hyperband = function(max.perf = TRUE, max.ressources = 81, prop.discard = 3, id,
       performance.fun = performance.fun
     )
     brack$run()
+    if (export.bracket.storage == TRUE) {
+      storage.name = paste0("bracket.storage", s)
+      assign(storage.name, brack$bracket.storage$data.matrix, envir = .GlobalEnv)
+    }
     bracketWinners[[s + 1]] = brack
   }
   # return a list of brackets
