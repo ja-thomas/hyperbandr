@@ -5,6 +5,7 @@
 library("devtools")
 load_all()
 library("mlr")
+library("mlrMBO")
 library("smoof")
 library("ggplot2")
 library("data.table")
@@ -18,7 +19,7 @@ problem = makeBraninFunction()
 
 # the branin function has 3 global minima
 opt = data.table(x1 = getGlobalOptimum(problem)$param$x1, x2 = getGlobalOptimum(problem)$param$x2)
-(vis = autoplot(problem) + geom_point(data = opt, aes(x = x1, y = x2), shape = 4, colour = "red", size = 5))
+(vis = autoplot(problem) + geom_point(data = opt, aes(x = x1, y = x2), shape = 20, colour = "red", size = 5))
 print(problem)
 
 # smoof functions contain a param.set describing types and bounds of the function parameters
@@ -129,7 +130,7 @@ hyperhyper = hyperband(
   prop.discard = 3,  
   max.perf = FALSE,
   export.bracket.storage = TRUE,
-  id = "xgboost", 
+  id = "branin", 
   par.set = configSpace, 
   sample.fun =  sample.fun,
   train.fun = train.fun, 
@@ -143,53 +144,27 @@ hyperhyper[[4]]$getPerformances()
 hyperhyper[[5]]$getPerformances()
 
 # visualize results of all brackets
-(vis = vis + geom_point(aes(x = hyperhyper[[1]]$models[[1]]$model[1], 
-                            y = hyperhyper[[1]]$models[[1]]$model[2]), 
-                        shape = 4, colour = "green", size = 5)
-  + geom_point(aes(x = hyperhyper[[2]]$models[[1]]$model[1],
-                   y = hyperhyper[[2]]$models[[1]]$model[2]),
-               shape = 4, colour = "blue", size = 5) 
-  + geom_point(aes(x = hyperhyper[[3]]$models[[1]]$model[1],
-                   y = hyperhyper[[3]]$models[[1]]$model[2]),
-               shape = 4, colour = "blue", size = 5)
-  + geom_point(aes(x = hyperhyper[[4]]$models[[1]]$model[1],
-                   y = hyperhyper[[4]]$models[[1]]$model[2]),
-               shape = 4, colour = "blue", size = 5)
-  + geom_point(aes(x = hyperhyper[[5]]$models[[1]]$model[1],
-                   y = hyperhyper[[5]]$models[[1]]$model[2]),
-               shape = 4, colour = "blue", size = 5))
-
-
-## make benchmark experiment
-benchmarkThis = function(howManyIt, precision) {
-  results = data.frame(matrix(ncol = 5, nrow = howManyIt))
-  for (i in 1:howManyIt) {
-    catf("Iteration %i", i)
-    hyperhyper = hyperband(
-      max.ressources = 81, 
-      prop.discard = 3,  
-      max.perf = FALSE,
-      export.bracket.storage = TRUE,
-      id = "xgboost", 
-      par.set = configSpace, 
-      sample.fun =  sample.fun,
-      train.fun = train.fun, 
-      performance.fun = performance.fun)
-    results[i, 1] = round(hyperhyper[[1]]$getPerformances(), digits = precision)
-    results[i, 2] = round(hyperhyper[[2]]$getPerformances(), digits = precision)
-    results[i, 3] = round(hyperhyper[[3]]$getPerformances(), digits = precision)
-    results[i, 4] = round(hyperhyper[[4]]$getPerformances(), digits = precision)
-    results[i, 5] = round(hyperhyper[[5]]$getPerformances(), digits = precision)
+results = data.frame(matrix(nrow = 5, ncol = 2))
+for(i in 1:5) {
+  results[i, 1] = hyperhyper[[i]]$models[[1]]$model[1]
+  for(j in 1:5) {
+    results[j, 2] = hyperhyper[[j]]$models[[1]]$model[2]
   }
-  return(results)
 }
+rownames(results) = c("bracket 1", "bracket 2", "bracket 3", "bracket 4", "bracket 5")
+colnames(results) = c("x1", "x2")
 
-# make 100 iterations
-braninMBOBenchmark = benchmarkThis(10, precision = 6)
-
-# visualize the results
-ggplot(stack(braninMBOBenchmark), aes(x = ind, y = values, fill = ind)) + 
-  scale_x_discrete(labels=c("bracket 1", "bracket 2", "bracket 3", "bracket 4", "bracket 5")) + 
-  theme(legend.position = "none") + labs(x = "", y = "performance") + 
-  geom_boxplot()
+(vis = vis + 
+  geom_point(data = results, mapping = aes(x = x1, y = x2), shape = 3, size = 3) + 
+  geom_text_repel(data = results,
+                  mapping = aes(x = x1, y = x2, color = factor(x1)),
+                  label = rownames(results),
+                  max.iter = 10000,
+                  force = 3,
+                  size = 4,
+                  box.padding = unit(5, "lines")) + 
+  theme_bw() + 
+  theme(legend.position = "none")) + 
+  scale_x_continuous(name = "configuration x1") +
+  scale_y_continuous(name = "hyperparameter x2")
 

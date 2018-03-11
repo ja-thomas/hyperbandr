@@ -146,47 +146,16 @@ hyperhyper = hyperband(
   prop.discard = 3,  
   max.perf = FALSE,
   export.bracket.storage = TRUE,
-  id = "xgboost", 
+  id = "neural_net", 
   par.set = configSpace, 
   sample.fun =  sample.fun,
   train.fun = train.fun, 
   performance.fun = performance.fun)
 
 # get performance arbitrary bracket
+hyperhyper[[1]]$getPerformances()
+hyperhyper[[2]]$getPerformances()
 hyperhyper[[3]]$getPerformances()
-
-
-## make benchmark experiment 
-benchmarkThis = function(howManyIt, precision) {
-  results = data.frame(matrix(ncol = 5, nrow = howManyIt))
-  for (i in 1:howManyIt) {
-    catf("Iteration %i", i)
-    hyperhyper = hyperband(
-      max.ressources = 81, 
-      prop.discard = 3,  
-      max.perf = FALSE,
-      export.bracket.storage = TRUE,
-      id = "xgboost", 
-      par.set = configSpace, 
-      sample.fun =  sample.fun,
-      train.fun = train.fun, 
-      performance.fun = performance.fun)
-    results[i, 1] = round(hyperhyper[[1]]$getPerformances(), digits = precision)
-    results[i, 2] = round(hyperhyper[[2]]$getPerformances(), digits = precision)
-    results[i, 3] = round(hyperhyper[[3]]$getPerformances(), digits = precision)
-    results[i, 4] = round(hyperhyper[[4]]$getPerformances(), digits = precision)
-    results[i, 5] = round(hyperhyper[[5]]$getPerformances(), digits = precision)
-  }
-  return(results)
-}
-
-# make 10 iterations (depending on your hardware this might take some time)
-myNeuralNetBenchmark = benchmarkThis(10, precision = 6)
-
-# visualize the results
-ggplot(stack(myNeuralNetBenchmark), aes(x = ind, y = values, fill = ind)) + 
-  scale_x_discrete(labels=c("bracket 1", "bracket 2", "bracket 3", "bracket 4", "bracket 5")) + 
-  theme(legend.position = "none") + labs(x = "", y = "performance") + 
-  scale_y_continuous(limits = c(0, 1)) +
-  geom_boxplot()
+hyperhyper[[4]]$getPerformances()
+hyperhyper[[5]]$getPerformances()
 

@@ -125,6 +125,9 @@ hyperband = function(max.ressources = 81, prop.discard = 3,
     }
     bracketWinners[[s + 1]] = brack
   }
+  if (export.bracket.storage == TRUE) {
+    rm(list = paste0("bracket.storage", 0:sMax), envir = .GlobalEnv)
+  }
   # return a list of brackets
   return(rev(bracketWinners))
 }
