@@ -34,25 +34,117 @@ configSpace = makeParamSet(
     makeNumericParam(id = "x1", lower = -5, upper = 10.1))
 
 # sample fun
-sample.fun = function(par.set, n.configs) {
+sample.fun = function(par.set, n.configs, ...) {
+  # sample from configSpace
   if (!exists("bracket.storage4", envir = .GlobalEnv)) {
-    sampleValues(par = par.set, n = n.configs)
+    lapply(sampleValues(par = par.set, n = n.configs), function(x) x[!is.na(x)])
   } else {
   # make MBO from dataBase  
     catf("Proposing points")
     ctrl = makeMBOControl(propose.points = n.configs)
     ctrl = setMBOControlInfill(ctrl, crit = crit.cb)
+    designMBO = data.table(bracket.storage4)
+    designMBO = data.frame(designMBO[, mean(y), by = x1])
+    colnames(designMBO) = colnames(bracket.storage4)
     opt.state = initSMBO(
       par.set = configSpace, 
-      design = bracket.storage4, 
+      design = designMBO,
       control = ctrl,
       minimize = TRUE, 
-      noisy = TRUE)
+      noisy = FALSE)
     prop = proposePoints(opt.state)
     propPoints = prop$prop.points
     rownames(propPoints) = c()
     propPoints = convertRowsToList(propPoints, name.list = FALSE, name.vector = TRUE)
-    return(propPoints)    
+    return(propPoints)
+  }
+}
+
+# sample fun 2
+sample.fun = function(par.set, n.configs, ...) {
+  # sample from configSpace
+  if (!exists("bracket.storage4", envir = .GlobalEnv)) {
+    lapply(sampleValues(par = par.set, n = n.configs), function(x) x[!is.na(x)])
+  } else if (!exists("bracket.storage3", envir = .GlobalEnv)) {
+  # make MBO from dataBase  
+    catf("Proposing points")
+    bracket.storage = bracket.storage4
+    ctrl = makeMBOControl(propose.points = n.configs)
+    ctrl = setMBOControlInfill(ctrl, crit = crit.cb)
+    designMBO = data.table(bracket.storage)
+    designMBO = data.frame(designMBO[, mean(y), by = x1])
+    colnames(designMBO) = colnames(bracket.storage)
+    opt.state = initSMBO(
+      par.set = configSpace, 
+      design = designMBO,
+      control = ctrl,
+      minimize = TRUE, 
+      noisy = FALSE)
+    prop = proposePoints(opt.state)
+    propPoints = prop$prop.points
+    rownames(propPoints) = c()
+    propPoints = convertRowsToList(propPoints, name.list = FALSE, name.vector = TRUE)
+    return(propPoints)
+  } else if (!exists("bracket.storage2", envir = .GlobalEnv)) {
+  # make MBO from dataBase
+    catf("Proposing points")
+    bracket.storage = rbind(bracket.storage4, bracket.storage3)
+    ctrl = makeMBOControl(propose.points = n.configs)
+    ctrl = setMBOControlInfill(ctrl, crit = crit.cb)
+    designMBO = data.table(bracket.storage)
+    designMBO = data.frame(designMBO[, mean(y), by = x1])
+    colnames(designMBO) = colnames(bracket.storage)
+    opt.state = initSMBO(
+      par.set = configSpace, 
+      design = designMBO,
+      control = ctrl,
+      minimize = TRUE, 
+      noisy = FALSE)
+    prop = proposePoints(opt.state)
+    propPoints = prop$prop.points
+    rownames(propPoints) = c()
+    propPoints = convertRowsToList(propPoints, name.list = FALSE, name.vector = TRUE)
+    return(propPoints)
+  } else if (!exists("bracket.storage1", envir = .GlobalEnv)) {
+  # make MBO from dataBase  
+    catf("Proposing points")
+    bracket.storage = rbind(bracket.storage4, bracket.storage3, bracket.storage2)
+    ctrl = makeMBOControl(propose.points = n.configs)
+    ctrl = setMBOControlInfill(ctrl, crit = crit.cb)
+    designMBO = data.table(bracket.storage)
+    designMBO = data.frame(designMBO[, mean(y), by = x1])
+    colnames(designMBO) = colnames(bracket.storage)
+    opt.state = initSMBO(
+      par.set = configSpace, 
+      design = designMBO,
+      control = ctrl,
+      minimize = TRUE, 
+      noisy = FALSE)
+    prop = proposePoints(opt.state)
+    propPoints = prop$prop.points
+    rownames(propPoints) = c()
+    propPoints = convertRowsToList(propPoints, name.list = FALSE, name.vector = TRUE)
+    return(propPoints)
+  } else if (!exists("bracket.storage0", envir = .GlobalEnv)) {
+  # make MBO from dataBase  
+    catf("Proposing points")
+    bracket.storage = rbind(bracket.storage4, bracket.storage3, bracket.storage2, bracket.storage1)
+    ctrl = makeMBOControl(propose.points = n.configs)
+    ctrl = setMBOControlInfill(ctrl, crit = crit.cb)
+    designMBO = data.table(bracket.storage)
+    designMBO = data.frame(designMBO[, mean(y), by = x1])
+    colnames(designMBO) = colnames(bracket.storage)
+    opt.state = initSMBO(
+      par.set = configSpace, 
+      design = designMBO,
+      control = ctrl,
+      minimize = TRUE, 
+      noisy = FALSE)
+    prop = proposePoints(opt.state)
+    propPoints = prop$prop.points
+    rownames(propPoints) = c()
+    propPoints = convertRowsToList(propPoints, name.list = FALSE, name.vector = TRUE)
+    return(propPoints)
   }
 }
 

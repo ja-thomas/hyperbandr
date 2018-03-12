@@ -6,8 +6,10 @@ library("devtools")
 load_all()
 library("mlr")
 library("mlrMBO")
+library("rgenoud")
 library("xgboost")
 library("ggplot2")
+library("data.table")
 
 
 #######################################
@@ -46,9 +48,100 @@ sample.fun = function(par.set, n.configs, ...) {
     catf("Proposing points")
     ctrl = makeMBOControl(propose.points = n.configs)
     ctrl = setMBOControlInfill(ctrl, crit = crit.cb)
+    designMBO = data.table(bracket.storage4)
+    designMBO = data.frame(designMBO[, mean(y), by = c("max_depth", "colsample_bytree", "subsample")])
+    colnames(designMBO) = colnames(bracket.storage4)
     opt.state = initSMBO(
       par.set = configSpace, 
-      design = bracket.storage4,
+      design = designMBO,
+      control = ctrl,
+      minimize = TRUE, 
+      noisy = FALSE)
+    prop = proposePoints(opt.state)
+    propPoints = prop$prop.points
+    rownames(propPoints) = c()
+    propPoints = convertRowsToList(propPoints, name.list = FALSE, name.vector = TRUE)
+    return(propPoints)
+  }
+}
+
+# sample fun 2
+sample.fun = function(par.set, n.configs, ...) {
+  # sample from configSpace
+  if (!exists("bracket.storage4", envir = .GlobalEnv)) {
+    lapply(sampleValues(par = par.set, n = n.configs), function(x) x[!is.na(x)])
+  } else if (!exists("bracket.storage3", envir = .GlobalEnv)) {
+  # make MBO from dataBase  
+    catf("Proposing points for bracket 3")
+    bracket.storage = bracket.storage4
+    ctrl = makeMBOControl(propose.points = n.configs)
+    ctrl = setMBOControlInfill(ctrl, crit = crit.cb)
+    designMBO = data.table(bracket.storage)
+    designMBO = data.frame(designMBO[, mean(y), by = c("max_depth", "colsample_bytree", "subsample")])
+    colnames(designMBO) = colnames(bracket.storage)
+    opt.state = initSMBO(
+      par.set = configSpace, 
+      design = designMBO,
+      control = ctrl,
+      minimize = TRUE, 
+      noisy = FALSE)
+    prop = proposePoints(opt.state)
+    propPoints = prop$prop.points
+    rownames(propPoints) = c()
+    propPoints = convertRowsToList(propPoints, name.list = FALSE, name.vector = TRUE)
+    return(propPoints)
+  } else if (!exists("bracket.storage2", envir = .GlobalEnv)) {
+  # make MBO from dataBase
+    catf("Proposing points for bracket 2")
+    bracket.storage = rbind(bracket.storage4, bracket.storage3)
+    ctrl = makeMBOControl(propose.points = n.configs)
+    ctrl = setMBOControlInfill(ctrl, crit = crit.cb)
+    designMBO = data.table(bracket.storage)
+    designMBO = data.frame(designMBO[, mean(y), by = c("max_depth", "colsample_bytree", "subsample")])
+    colnames(designMBO) = colnames(bracket.storage)
+    opt.state = initSMBO(
+      par.set = configSpace, 
+      design = designMBO,
+      control = ctrl,
+      minimize = TRUE, 
+      noisy = FALSE)
+    prop = proposePoints(opt.state)
+    propPoints = prop$prop.points
+    rownames(propPoints) = c()
+    propPoints = convertRowsToList(propPoints, name.list = FALSE, name.vector = TRUE)
+    return(propPoints)
+  } else if (!exists("bracket.storage1", envir = .GlobalEnv)) {
+  # make MBO from dataBase  
+    catf("Proposing points for bracket 1")
+    bracket.storage = rbind(bracket.storage4, bracket.storage3, bracket.storage2)
+    ctrl = makeMBOControl(propose.points = n.configs)
+    ctrl = setMBOControlInfill(ctrl, crit = crit.cb)
+    designMBO = data.table(bracket.storage)
+    designMBO = data.frame(designMBO[, mean(y), by = c("max_depth", "colsample_bytree", "subsample")])
+    colnames(designMBO) = colnames(bracket.storage)
+    opt.state = initSMBO(
+      par.set = configSpace, 
+      design = designMBO,
+      control = ctrl,
+      minimize = TRUE, 
+      noisy = FALSE)
+    prop = proposePoints(opt.state)
+    propPoints = prop$prop.points
+    rownames(propPoints) = c()
+    propPoints = convertRowsToList(propPoints, name.list = FALSE, name.vector = TRUE)
+    return(propPoints)
+  } else if (!exists("bracket.storage0", envir = .GlobalEnv)) {
+  # make MBO from dataBase  
+    catf("Proposing points for bracket 0")
+    bracket.storage = rbind(bracket.storage4, bracket.storage3, bracket.storage2, bracket.storage1)
+    ctrl = makeMBOControl(propose.points = n.configs)
+    ctrl = setMBOControlInfill(ctrl, crit = crit.cb)
+    designMBO = data.table(bracket.storage)
+    designMBO = data.frame(designMBO[, mean(y), by = c("max_depth", "colsample_bytree", "subsample")])
+    colnames(designMBO) = colnames(bracket.storage)
+    opt.state = initSMBO(
+      par.set = configSpace, 
+      design = designMBO,
       control = ctrl,
       minimize = TRUE, 
       noisy = FALSE)
@@ -86,50 +179,6 @@ performance.fun = function(model) {
 #######################################
 ############# applications ############
 #######################################
-
-## make xgboost algorithm object
-obj = algorithm$new(
-  id = "xgboost",
-  configuration = sample.fun(par.set = configSpace, n.configs = 1)[[1]],
-  initial.budget = 1,
-  init.fun = init.fun,
-  train.fun = train.fun,
-  performance.fun = performance.fun)
-
-# inspect model
-obj$model
-# inspect performance
-obj$getPerformance()
-# verify iterations
-obj$model$niter
-# continue training for 10 iterations
-obj$continue(10)
-# verify iterations again
-obj$model$niter
-# inspect performance again
-obj$getPerformance()
-
-
-## make xgboost bracket object
-brack = bracket$new(
-  max.perf = FALSE,
-  max.ressources = 81,
-  prop.discard = 3,
-  s = 4,
-  B = (4 + 1)*81,
-  id = "xgboost",
-  par.set = configSpace,
-  sample.fun = sample.fun,
-  train.fun = train.fun,
-  performance.fun = performance.fun)
-
-# inspect configurations
-brack$configurations
-# run the bracket
-brack$run()
-# inspect the performance of the best model
-brack$getPerformances()
-
 
 ## call hyperband
 hyperhyper = hyperband(
