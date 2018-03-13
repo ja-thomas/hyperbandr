@@ -95,22 +95,21 @@ algorithm = R6Class("Algorithm",
     performance.fun = NULL,
     algorithm.result = NULL,
     initialize = function(id, configuration, initial.budget, init.fun, train.fun, performance.fun, ...) {
-      ##FIXME: argchecks
       self$id = id
       self$configuration = configuration
       self$current.budget = initial.budget
       self$model = init.fun(initial.budget, configuration, ...)
       self$train.fun = train.fun
       self$performance.fun = performance.fun
-      self$algorithm.result = c(unlist(self$configuration), self$getPerformance())
-      names(self$algorithm.result) = c(rev(rev(names(self$algorithm.result))[-1]), "y")
+      self$algorithm.result = algorithmStorage$new(self$configuration, self$current.budget, 
+        self$model, self$performance.fun)
     },
     continue = function(budget, ...) {
       ##FIXME: argchecks
       self$model = self$train.fun(self$model, budget, ...)
       self$current.budget = self$current.budget + budget
-      self$algorithm.result = c(unlist(self$configuration), self$getPerformance())
-      names(self$algorithm.result) = c(rev(rev(names(self$algorithm.result))[-1]), "y")
+      self$algorithm.result$attachLine(algorithmStorage$new(self$configuration, self$current.budget, 
+        self$model, self$performance.fun)$data.matrix)
       invisible(NULL)
     },
     getPerformance = function() {

@@ -70,12 +70,16 @@ obj = algorithm$new(
 
 # inspect model
 obj$model
+# 
+obj$algorithm.result$data.matrix
 # inspect performance
 obj$getPerformance()
 # verify iterations
 obj$model$niter
 # continue training for 10 iterations
 obj$continue(10)
+# 
+obj$algorithm.result$data.matrix
 # verify iterations again
 obj$model$niter
 # inspect performance again
@@ -83,7 +87,7 @@ obj$getPerformance()
 
 
 ## make xgboost bracket object
-brack = bracket$new(
+brack = bracket2$new(
   max.perf = FALSE,
   max.ressources = 81,
   prop.discard = 3,
@@ -97,8 +101,12 @@ brack = bracket$new(
 
 # inspect configurations
 brack$configurations
+# tail(brack$models[[1]]$algorithm.result$data.matrix, 1)
+brack$bracket.storage$data.matrix
 # run the bracket
 brack$run()
+#
+brack$bracket.storage$data.matrix
 # inspect the performance of the best model
 brack$getPerformances()
 

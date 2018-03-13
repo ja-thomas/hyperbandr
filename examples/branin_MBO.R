@@ -112,7 +112,7 @@ sample.fun = function(par.set, n.configs, ...) {
     ctrl = makeMBOControl(propose.points = n.configs)
     ctrl = setMBOControlInfill(ctrl, crit = crit.cb)
     designMBO = data.table(bracket.storage)
-    designMBO = data.frame(designMBO[, mean(y), by = x1])
+    designMBO = data.frame(designMBO[, mean(y), by = x1]) # als getter in klasse BracketStorage
     colnames(designMBO) = colnames(bracket.storage)
     opt.state = initSMBO(
       par.set = configSpace, 

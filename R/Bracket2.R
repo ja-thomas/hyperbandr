@@ -102,7 +102,7 @@
 #'   + geom_point(aes(x = brack$models[[1]]$model[[1]], y = brack$models[[1]]$model[[2]]), 
 #'                shape = 4, colour = "blue", size = 5))
 
-bracket = R6Class("Bracket",
+bracket2 = R6Class("Bracket",
   public = list(
     id = NULL,
     par.set = NULL,
@@ -141,7 +141,7 @@ bracket = R6Class("Bracket",
                       ...)
       }, conf = self$configurations, name = seq_len(self$n.configs))
       # initialize bracket storage
-      #self$bracket.storage = bracketStorage$new(self$models, self$par.set)
+      self$bracket.storage = bracketStorage2$new(self$models, self$par.set)
       #self$storage.name = paste0("bracket.storage", self$s)
       #assign(self$storage.name, bracket.storage, envir = .GlobalEnv)
     },
@@ -175,7 +175,7 @@ bracket = R6Class("Bracket",
       self$filterTopKModels(self$getNumberOfModelsToSelect())
       lapply(self$models, function(x) x$continue(self$getBudgetAllocation()))
       # add models
-      #self$bracket.storage$writeBracketStorage(bracketStorage$new(self$models, self$par.set)$data.matrix)
+      self$bracket.storage$attachLines(bracketStorage2$new(self$models, self$par.set)$data.matrix)
       invisible(NULL)
     },
     ## method to compute all steps of successive halving (e.g. compute one bracket)
