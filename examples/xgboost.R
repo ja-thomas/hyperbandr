@@ -78,6 +78,8 @@ obj$getPerformance()
 obj$model$niter
 # continue training for 10 iterations
 obj$continue(10)
+# inspect model
+obj$model
 # 
 obj$algorithm.result$data.matrix
 # verify iterations again
@@ -101,7 +103,7 @@ brack = bracket2$new(
 
 # inspect configurations
 brack$configurations
-# tail(brack$models[[1]]$algorithm.result$data.matrix, 1)
+# 
 brack$bracket.storage$data.matrix
 # run the bracket
 brack$run()
@@ -112,7 +114,7 @@ brack$getPerformances()
 
 
 ## call hyperband
-hyperhyper = hyperband(
+hyperhyper = hyperband3(
   max.ressources = 81, 
   prop.discard = 3,  
   max.perf = FALSE,
@@ -122,6 +124,17 @@ hyperhyper = hyperband(
   sample.fun =  sample.fun,
   train.fun = train.fun, 
   performance.fun = performance.fun)
+
+hyperhyper = hyperband3$new(
+  max.ressources = 81, 
+  prop.discard = 3,  
+  max.perf = FALSE,
+  id = "xgboost", 
+  par.set = configSpace, 
+  sample.fun =  sample.fun,
+  train.fun = train.fun, 
+  performance.fun = performance.fun
+)
 
 # get performance arbitrary bracket
 hyperhyper[[1]]$getPerformances()

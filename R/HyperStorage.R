@@ -13,22 +13,20 @@
 #' @return Algorithm object
 #' @export
 
-bracketStorage2 = R6Class("bracketStorage",
+hyperStorage = R6Class("hyperStorage",
   public = list(
     data.matrix = NULL,
     col.names = NULL,
     # initialize the bracketStorage object as a data fame 
-    initialize = function(models, par.set) {
-      self$data.matrix = data.frame(matrix(unlist(lapply(models, 
-        function(x) tail(x$algorithm.result$data.matrix, n = 1))), 
-        ncol = length(par.set$pars) + 2, byrow = TRUE))
+    initialize = function(par.set) {
+      #self$data.matrix = bracket$bracket.storage$data.matrix
+      self$data.matrix = data.frame(matrix(ncol = length(par.set$pars) + 2, nrow = 0))
       self$col.names = c(names(par.set$pars), "current budget", "y")
       colnames(self$data.matrix) = self$col.names
     },
-    # method to rbind a new line to the 
+    # method to rbind a new line to the data.matrix
     attachLines = function(newline) {
       self$data.matrix = rbind(self$data.matrix, newline)
-      colnames(self$data.matrix) = self$col.names
     }
   )
 )

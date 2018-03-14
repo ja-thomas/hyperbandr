@@ -104,14 +104,16 @@ algorithm = R6Class("Algorithm",
       self$algorithm.result = algorithmStorage$new(self$configuration, self$current.budget, 
         self$model, self$performance.fun)
     },
+    # method to..
     continue = function(budget, ...) {
-      ##FIXME: argchecks
       self$model = self$train.fun(self$model, budget, ...)
       self$current.budget = self$current.budget + budget
+      # do this
       self$algorithm.result$attachLine(algorithmStorage$new(self$configuration, self$current.budget, 
         self$model, self$performance.fun)$data.matrix)
       invisible(NULL)
     },
+    # method to..
     getPerformance = function() {
       self$performance.fun(self$model)
     }
