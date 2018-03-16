@@ -94,19 +94,19 @@ algorithm = R6Class("Algorithm",
     train.fun = NULL,
     performance.fun = NULL,
     algorithm.result = NULL,
-    initialize = function(id, configuration, initial.budget, init.fun, train.fun, performance.fun, ...) {
+    initialize = function(id, configuration, initial.budget, init.fun, train.fun, performance.fun) {
       self$id = id
       self$configuration = configuration
       self$current.budget = initial.budget
-      self$model = init.fun(initial.budget, configuration, ...)
+      self$model = init.fun(initial.budget, configuration)
       self$train.fun = train.fun
       self$performance.fun = performance.fun
       self$algorithm.result = algorithmStorage$new(self$configuration, self$current.budget, 
         self$model, self$performance.fun)
     },
     # method to..
-    continue = function(budget, ...) {
-      self$model = self$train.fun(self$model, budget, ...)
+    continue = function(budget) {
+      self$model = self$train.fun(self$model, budget)
       self$current.budget = self$current.budget + budget
       # do this
       self$algorithm.result$attachLine(algorithmStorage$new(self$configuration, self$current.budget, 

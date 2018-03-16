@@ -153,6 +153,33 @@ sample.fun = function(par.set, n.configs, ...) {
   }
 }
 
+# sample fun 3
+sample.fun = function(par.set, n.configs, ...) {
+  # sample from configSpace
+  if (dim(hyper.storage$data.matrix)[[1]] == 0) {
+    lapply(sampleValues(par = par.set, n = n.configs), function(x) x[!is.na(x)])
+  } else {
+  # make MBO from dataBase  
+    catf("Proposing points")
+    ctrl = makeMBOControl(propose.points = n.configs)
+    ctrl = setMBOControlInfill(ctrl, crit = crit.cb)
+    designMBO = data.table(hyper.storage$data.matrix)
+    designMBO = data.frame(designMBO[, mean(y), by = c("max_depth", "colsample_bytree", "subsample")])
+    colnames(designMBO) = colnames(hyper.storage$data.matrix)[-4]
+    opt.state = initSMBO(
+      par.set = configSpace, 
+      design = designMBO,
+      control = ctrl,
+      minimize = TRUE, 
+      noisy = FALSE)
+    prop = proposePoints(opt.state)
+    propPoints = prop$prop.points
+    rownames(propPoints) = c()
+    propPoints = convertRowsToList(propPoints, name.list = FALSE, name.vector = TRUE)
+    return(propPoints)
+  }
+}
+
 # init fun 
 init.fun = function(r, config, ...) {
   # watchlist for lazy performance evaluation (ha-ha)
@@ -181,11 +208,10 @@ performance.fun = function(model) {
 #######################################
 
 ## call hyperband
-hyperhyper = hyperband(
+hyperhyper = hyperband3(
   max.ressources = 81, 
   prop.discard = 3,  
   max.perf = FALSE,
-  export.bracket.storage = TRUE,
   id = "xgboost", 
   par.set = configSpace, 
   sample.fun =  sample.fun,

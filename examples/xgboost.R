@@ -77,7 +77,9 @@ obj$getPerformance()
 # verify iterations
 obj$model$niter
 # continue training for 10 iterations
-obj$continue(10)
+for (i in rep(1, 20)) {
+  obj$continue(i)
+}
 # inspect model
 obj$model
 # 
@@ -86,6 +88,13 @@ obj$algorithm.result$data.matrix
 obj$model$niter
 # inspect performance again
 obj$getPerformance()
+# plot it
+ggplot(data = obj$algorithm.result$data.matrix, aes(x = `current budget`, y = y, colour = "midnightblue")) +
+  scale_y_continuous(name = "MSE", limits = c(0, 0.4)) + 
+  scale_x_continuous(labels = function (x) floor(x), name = "epochs") + 
+  labs(colour = "") +
+  geom_line() +
+  theme(legend.position="none")
 
 
 ## make xgboost bracket object
@@ -111,6 +120,15 @@ brack$run()
 brack$bracket.storage$data.matrix
 # inspect the performance of the best model
 brack$getPerformances()
+# plot it
+plotThisBracket = data.table(brack$bracket.storage$data.matrix)
+data.frame(plotThisBracket[, mean(y), by = c("max_depth", "colsample_bytree", "subsample")])
+ggplot(data = brack$bracket.storage$data.matrix, aes(x = `current budget`, y = y, colour = "midnightblue")) +
+  scale_y_continuous(name = "MSE", limits = c(0, 0.4)) + 
+  scale_x_continuous(labels = function (x) floor(x), name = "epochs") + 
+  labs(colour = "") +
+  geom_line() +
+  theme(legend.position="none")
 
 
 ## call hyperband
@@ -118,12 +136,14 @@ hyperhyper = hyperband3(
   max.ressources = 81, 
   prop.discard = 3,  
   max.perf = FALSE,
-  export.bracket.storage = TRUE,
   id = "xgboost", 
   par.set = configSpace, 
   sample.fun =  sample.fun,
   train.fun = train.fun, 
   performance.fun = performance.fun)
+
+bla = data.table(hyperhyper[[2]]$data.matrix)
+data.frame(bla[, mean(y), by = c("max_depth", "colsample_bytree", "subsample")])
 
 hyperhyper = hyperband3$new(
   max.ressources = 81, 
