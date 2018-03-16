@@ -146,8 +146,7 @@
 # )
 
 hyperband3 = function(max.ressources = 81, prop.discard = 3,
-  max.perf = TRUE, id,
-  par.set,  sample.fun, train.fun, performance.fun) {
+  max.perf = TRUE, id, par.set,  sample.fun, train.fun, performance.fun) {
   # |sMax + 1| are the total number of brackets to try
   sMax =  floor(log(max.ressources, base = prop.discard))
   B = (sMax + 1)*max.ressources
@@ -168,8 +167,8 @@ hyperband3 = function(max.ressources = 81, prop.discard = 3,
       par.set = par.set,
       sample.fun = sample.fun,
       train.fun = train.fun,
-      performance.fun = performance.fun#,
-      #bracket.storage = hyper.storage
+      performance.fun = performance.fun,
+      bracket.storage = hyper.storage$data.matrix
     )
     brack$run()
     bracketWinners[[s + 1]] = brack

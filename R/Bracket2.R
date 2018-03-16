@@ -137,8 +137,7 @@ bracket2 = R6Class("Bracket",
                       initial.budget = self$getBudgetAllocation(),
                       init.fun = init.fun, 
                       train.fun = train.fun, 
-                      performance.fun = performance.fun, 
-                      ...)
+                      performance.fun = performance.fun)
       }, conf = self$configurations, name = seq_len(self$n.configs))
       # initialize bracket storage
       self$bracket.storage = bracketStorage2$new(self$models, self$par.set)
