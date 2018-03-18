@@ -43,12 +43,13 @@ print(problem)
 configSpace = makeParamSet(
   makeNumericParam(id = "learning.rate", lower = 0.05, upper = 0.3),
   makeNumericParam(id = "momentum", lower = 0.7, upper = 0.99),
-  makeIntegerParam(id = "layers", lower = 1L, upper = 1L),
-  makeIntegerParam(id = "num.layer1", lower = 1L, upper = 8L),
+  makeIntegerParam(id = "layers", lower = 1L, upper = 2L),
+  makeIntegerParam(id = "num.layer1", lower = 4L, upper = 8L),
+  makeIntegerParam(id = "num.layer2", lower = 8L, upper = 16L),
   makeDiscreteParam(id = "act1", c("tanh", "relu", "sigmoid")))
 
 # sample fun
-sample.fun = function(par.set, n.configs) {
+sample.fun = function(par.set, n.configs, ...) {
   lapply(sampleValues(par = par.set, n = n.configs), function(x) x[!is.na(x)])
 }
 
@@ -82,26 +83,34 @@ performance.fun = function(model) {
 ############# applications ############
 #######################################
 
-## make neural net algorithm object
+#### make xgboost algorithm object ####
 obj = algorithm$new(
   id = "neural_net",
   configuration = sample.fun(par.set = configSpace, n.configs = 1)[[1]],
-  initial.budget = 0,
+  initial.budget = 1,
   init.fun = init.fun,
   train.fun = train.fun,
   performance.fun = performance.fun)
 
-# inspect model
+# we can inspect model of our algorithm object
 obj$model
-# inspect performance
+# the data matrix shows us the hyperparameters, the current budget and the performance
+obj$algorithm.result$data.matrix
+# if we are only interested in the performance, we can also call the getPerformance method
 obj$getPerformance()
-# continue training for 10 iterations
-obj$continue(10)
-# inspect performance again
-obj$getPerformance()
+# we can continue training our object for one iteration by calling
+obj$continue(1)
+# continue training for 18 iterations to obtain a total of 20 iterations
+invisible(capture.output(replicate(18, obj$continue(1))))
+# inspect model the model again
+obj$model
+# inspect the data matrix again
+obj$algorithm.result$data.matrix
+# let us visualize the validation error development
+obj$visPerformance()
 
 
-## make neural net bracket object
+##### make xgboost bracket object #####
 brack = bracket$new(
   max.perf = TRUE,
   max.ressources = 81,
@@ -114,10 +123,17 @@ brack = bracket$new(
   train.fun = train.fun,
   performance.fun = performance.fun)
 
-# inspect configurations
-brack$configurations
+
+# the data matrix shows us the hyperparameters, the current budget and the performance
+brack$bracket.storage$data.matrix
+# 
+brack$visPerformances()
 # run the bracket
 brack$run()
+#
+brack$bracket.storage$data.matrix
+# 
+brack$visPerformances()
 # inspect the performance of the best model
 brack$getPerformances()
 
@@ -126,18 +142,23 @@ brack$getPerformances()
 hyperhyper = hyperband(
   max.ressources = 81, 
   prop.discard = 3,  
-  max.perf = FALSE,
-  export.bracket.storage = TRUE,
+  max.perf = TRUE,
   id = "neural_net", 
   par.set = configSpace, 
   sample.fun =  sample.fun,
   train.fun = train.fun, 
   performance.fun = performance.fun)
 
+
 # get performance arbitrary bracket
 hyperhyper[[1]]$getPerformances()
+hyperhyper[[1]]$visPerformances()
 hyperhyper[[2]]$getPerformances()
+hyperhyper[[2]]$visPerformances()
 hyperhyper[[3]]$getPerformances()
+hyperhyper[[3]]$visPerformances()
 hyperhyper[[4]]$getPerformances()
+hyperhyper[[4]]$visPerformances()
 hyperhyper[[5]]$getPerformances()
+hyperhyper[[5]]$visPerformances()
 

@@ -95,14 +95,15 @@
 #'                    y = hyperhyper[[5]]$models[[1]]$model[2]),
 #'                shape = 4, colour = "blue", size = 5))
 
-hyperband = function(max.ressources = 81, prop.discard = 3, 
-  max.perf = TRUE, export.bracket.storage = FALSE, id, 
-  par.set,  sample.fun, train.fun, performance.fun) { 
-  # |sMax + 1| are the total number of brackets to try 
+
+hyperband = function(max.ressources = 81, prop.discard = 3,
+  max.perf = TRUE, id, par.set, sample.fun, train.fun, performance.fun) {
+  # |sMax + 1| are the total number of brackets to try
   sMax =  floor(log(max.ressources, base = prop.discard))
   B = (sMax + 1)*max.ressources
   # initialize a list for all #sMax brackets
   bracketWinners = as.list(numeric(sMax + 1))
+  totalStorage = hyperStorage$new(par.set)
   # begin hyperband
   for(s in sMax:0) {
     catf("Beginning with bracket %s", s)
@@ -111,22 +112,17 @@ hyperband = function(max.ressources = 81, prop.discard = 3,
       max.ressources = max.ressources,
       prop.discard = prop.discard,
       s = s,
-      B = B, 
+      B = B,
       id = id,
       par.set = par.set,
       sample.fun = sample.fun,
       train.fun = train.fun,
-      performance.fun = performance.fun
+      performance.fun = performance.fun,
+      bracket.storage = totalStorage$data.matrix
     )
     brack$run()
-    if (export.bracket.storage == TRUE) {
-      storage.name = paste0("bracket.storage", s)
-      assign(storage.name, brack$bracket.storage$data.matrix, envir = .GlobalEnv)
-    }
     bracketWinners[[s + 1]] = brack
-  }
-  if (export.bracket.storage == TRUE) {
-    rm(list = paste0("bracket.storage", 0:sMax), envir = .GlobalEnv)
+    totalStorage$attachLines(bracketWinners[[s + 1]]$bracket.storage$data.matrix)
   }
   # return a list of brackets
   return(rev(bracketWinners))

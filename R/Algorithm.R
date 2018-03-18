@@ -20,6 +20,7 @@
 #' @section Methods:
 #' \code{$continue(budget)} continue training for \code{budget} iterations  \cr
 #' \code{$getPerformance()} computes the performance of the model \cr
+#' \code{$visPerformance()} visualizes the performance of the model \cr
 #'
 #' @return Algorithm object
 #' @export
@@ -104,18 +105,31 @@ algorithm = R6Class("Algorithm",
       self$algorithm.result = algorithmStorage$new(self$configuration, self$current.budget, 
         self$model, self$performance.fun)
     },
-    # method to..
+    # method to continue training
     continue = function(budget) {
       self$model = self$train.fun(self$model, budget)
       self$current.budget = self$current.budget + budget
-      # do this
+      # append the performance to the algorithm storage
       self$algorithm.result$attachLine(algorithmStorage$new(self$configuration, self$current.budget, 
         self$model, self$performance.fun)$data.matrix)
       invisible(NULL)
     },
-    # method to..
+    # method to obtain the current performance
     getPerformance = function() {
       self$performance.fun(self$model)
+    },
+    # method to visualize the performance
+    visPerformance = function() {
+      if (dim(self$algorithm.result$data.matrix)[1] == 1) {
+        catf("execute $continue() before using $visPerformance()")
+      } else {
+        ggplot(data = self$algorithm.result$data.matrix,
+          aes(x = current_budget, y = y)) +
+        scale_y_continuous(name = "performance") +
+        scale_x_continuous(labels = function (x) floor(x), name = "budget") +
+        theme(legend.position = "none") +
+        geom_line(size = 0.5, colour = "cyan3")
+      }
     }
   )
 )

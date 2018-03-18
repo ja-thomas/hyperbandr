@@ -16,18 +16,16 @@
 bracketStorage = R6Class("bracketStorage",
   public = list(
     data.matrix = NULL,
-    col.names = NULL,
-    # initialize the bracketStorage object as a data fame 
-    initialize = function(model.list, par.set) {
-      self$data.matrix = data.frame(matrix(unlist(lapply(model.list, function(x) x$algorithm.result)), 
-        ncol = (length(par.set$pars) + 1), byrow = TRUE))
-      self$col.names = c(names(par.set$pars), "y")
-      colnames(self$data.matrix) = self$col.names
+    #col.names = NULL,
+    # initialize the bracketStorage object as a data fame
+    initialize = function(models) {
+      self$data.matrix = do.call(rbind, lapply(models, 
+        function(x) tail(x$algorithm.result$data.matrix, n = 1)))
     },
-    # method to rbind a new line to the data.matrix
-    writeBracketStorage = function(newline) {
+    # method to rbind a new line to the
+    attachLines = function(newline) {
       self$data.matrix = rbind(self$data.matrix, newline)
-      colnames(self$data.matrix) = self$col.names
+    rownames(self$data.matrix) = 1:dim(self$data.matrix)[[1]]  
     }
   )
 )

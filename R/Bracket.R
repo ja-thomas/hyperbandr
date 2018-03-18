@@ -129,7 +129,7 @@ bracket = R6Class("Bracket",
       self$n.configs = ceiling((self$B / max.ressources) * (prop.discard^s / (s + 1)))
       self$r.config = max.ressources * prop.discard^(-s)
       self$par.set = par.set
-      self$configurations = sample.fun(self$par.set, self$n.configs)
+      self$configurations = sample.fun(self$par.set, self$n.configs, ...)
       # create the models
       self$models = mapply(function(conf, name) {
         algorithm$new(id = paste(id, name, sep = "."), 
@@ -137,13 +137,10 @@ bracket = R6Class("Bracket",
                       initial.budget = self$getBudgetAllocation(),
                       init.fun = init.fun, 
                       train.fun = train.fun, 
-                      performance.fun = performance.fun, 
-                      ...)
+                      performance.fun = performance.fun)
       }, conf = self$configurations, name = seq_len(self$n.configs))
       # initialize bracket storage
-      #self$bracket.storage = bracketStorage$new(self$models, self$par.set)
-      #self$storage.name = paste0("bracket.storage", self$s)
-      #assign(self$storage.name, bracket.storage, envir = .GlobalEnv)
+      self$bracket.storage = bracketStorage$new(self$models)
     },
     ## method to compute budget allocation at each step of successive halving 
     getBudgetAllocation = function() {
@@ -174,8 +171,8 @@ bracket = R6Class("Bracket",
       self$iteration = self$iteration + 1
       self$filterTopKModels(self$getNumberOfModelsToSelect())
       lapply(self$models, function(x) x$continue(self$getBudgetAllocation()))
-      # add models
-      #self$bracket.storage$writeBracketStorage(bracketStorage$new(self$models, self$par.set)$data.matrix)
+      # attach model results to the bracket.storage
+      self$bracket.storage$attachLines(bracketStorage$new(self$models)$data.matrix)
       invisible(NULL)
     },
     ## method to compute all steps of successive halving (e.g. compute one bracket)
@@ -195,6 +192,25 @@ bracket = R6Class("Bracket",
     printState = function() {
       catf("Iteration %i, with %i Algorithms left (Budget: %i)", self$iteration, self$n.configs, 
         self$models[[1]]$current.budget)
+    },
+    ## method to visualize the bracket performance
+    visPerformances = function() {
+      if (dim(self$bracket.storage$data.matrix)[1] == self$n.configs) {
+        catf("execute $run() or $step() before using $visPerformances()")
+      } else {
+      # some dplyr magic to prepare the bracket data for plotting
+        help.df = self$bracket.storage$data.matrix %>%
+          select(1:length(self$par.set$pars)) %>% unique() %>% mutate(configuration = 1:nrow(.))
+        group.names = names(self$bracket.storage$data.matrix)[1:3]
+        df.gg = self$bracket.storage$data.matrix %>% left_join(help.df, by = group.names) %>%
+          group_by_at(vars(one_of(group.names))) %>% mutate(count = n())
+        df.gg$configuration = as.factor(df.gg$configuration)
+      # plot the mutated data
+        ggplot(df.gg, aes(x = current_budget, y = y, colour = configuration)) +
+          geom_point(show.legend = FALSE) +
+          geom_line(data = df.gg[df.gg$count > 1, ], 
+            aes(x = current_budget, y = y, colour = configuration), show.legend = FALSE)
+      }  
     }
   )
 )

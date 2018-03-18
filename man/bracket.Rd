@@ -49,6 +49,7 @@ The function to carry out training}
 
 \item{\code{performance.fun}}{The function to measure the performance}
 }}
+
 \section{Methods}{
 
 \code{$run()} computes the whole bracket \cr
@@ -57,6 +58,7 @@ The function to carry out training}
 \code{$filterTopKModels(k)} filters the best k models and deletes the remaining models from the bracket object \cr
 \code{$getPerformances()} computes the performance of all remaining models \cr
 }
+
 \examples{
 # simple example for the branin function (minimization problem)
 library("smoof")
@@ -123,4 +125,3 @@ opt = data.table(x1 = getGlobalOptimum(problem)$param$x1, x2 = getGlobalOptimum(
                shape = 4, colour = "blue", size = 5))
 }
 \keyword{datasets}
-

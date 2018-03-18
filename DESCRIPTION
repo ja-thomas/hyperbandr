@@ -18,6 +18,7 @@ Suggests:
     smoof,
     mlr,
     reshape2,
-    checkmate
+    checkmate,
+    ggplot2
 VignetteBuilder: knitr
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1

@@ -13,32 +13,19 @@
 #' @return Algorithm object
 #' @export
 
-# initialize = function(id, configuration, initial.budget, init.fun, train.fun, performance.fun, ...) {
-#   self$id = id
-#   self$configuration = configuration
-#   self$current.budget = initial.budget
-#   self$model = init.fun(initial.budget, configuration, ...)
-#   self$train.fun = train.fun
-#   self$performance.fun = performance.fun
-#   
-# self$algorithm.result = algorithmStorage$new(self$configuration, self$current.budget, self$model, self$performance.fun)
-#   
-#   self$algorithm.result = data.frame(matrix(
-#     c(unlist(self$configuration), self$current.budget, self$getPerformance()), 
-#     ncol = length(self$configuration) + 2))
-#   names(self$algorithm.result) = c(names(self$configuration), "current budget", "y")
-# },
-
 algorithmStorage = R6Class("algorithmStorage",
   public = list(
     data.matrix = NULL,
     col.names = NULL,
     # initialize the bracketStorage object as a data fame 
     initialize = function(config, budget, model, performance) {
-      self$data.matrix = data.frame(matrix(c(unlist(config), budget, performance(model)), 
-                                           ncol = length(config) + 2, byrow = TRUE))
-      self$col.names = c(names(config), "current budget", "y")
+      self$data.matrix = data.frame(matrix(c(unlist(config), 
+        budget, performance(model)), ncol = length(config) + 2, byrow = TRUE))
+      self$col.names = c(names(config), "current_budget", "y")
       colnames(self$data.matrix) = self$col.names
+      # ensure current_budget and y are numerics, else visPerformance does not work
+      self$data.matrix$current_budget = as.numeric(as.character(self$data.matrix$current_budget))
+      self$data.matrix$y = as.numeric(as.character(self$data.matrix$y))
     },
     # method to rbind a new line to the data.matrix
     attachLine = function(newline) {

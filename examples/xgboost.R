@@ -30,7 +30,7 @@ configSpace = makeParamSet(
   makeNumericParam("subsample", lower = 0.3, upper = 1, default = 0.6))
 
 # sample fun
-sample.fun = function(par.set, n.configs) {
+sample.fun = function(par.set, n.configs, ...) {
   lapply(sampleValues(par = par.set, n = n.configs), function(x) x[!is.na(x)])
 }
 
@@ -59,7 +59,7 @@ performance.fun = function(model) {
 ############# applications ############
 #######################################
 
-## make xgboost algorithm object
+#### make xgboost algorithm object ####
 obj = algorithm$new(
   id = "xgboost",
   configuration = sample.fun(par.set = configSpace, n.configs = 1)[[1]],
@@ -68,37 +68,26 @@ obj = algorithm$new(
   train.fun = train.fun,
   performance.fun = performance.fun)
 
-# inspect model
+# we can inspect model of our algorithm object
 obj$model
-# 
+# the data matrix shows us the hyperparameters, the current budget and the performance
 obj$algorithm.result$data.matrix
-# inspect performance
+# if we are only interested in the performance, we can also call the getPerformance method
 obj$getPerformance()
-# verify iterations
-obj$model$niter
-# continue training for 10 iterations
-for (i in rep(1, 20)) {
-  obj$continue(i)
-}
-# inspect model
+# we can continue training our object for one iteration by calling
+obj$continue(1)
+# continue training for 18 iterations to obtain a total of 20 iterations
+invisible(capture.output(replicate(18, obj$continue(1))))
+# inspect model the model again
 obj$model
-# 
+# inspect the data matrix again
 obj$algorithm.result$data.matrix
-# verify iterations again
-obj$model$niter
-# inspect performance again
-obj$getPerformance()
-# plot it
-ggplot(data = obj$algorithm.result$data.matrix, aes(x = `current budget`, y = y, colour = "midnightblue")) +
-  scale_y_continuous(name = "MSE", limits = c(0, 0.4)) + 
-  scale_x_continuous(labels = function (x) floor(x), name = "epochs") + 
-  labs(colour = "") +
-  geom_line() +
-  theme(legend.position="none")
+# let us visualize the validation error development
+obj$visPerformance()
 
 
-## make xgboost bracket object
-brack = bracket2$new(
+##### make xgboost bracket object #####
+brack = bracket$new(
   max.perf = FALSE,
   max.ressources = 81,
   prop.discard = 3,
@@ -110,29 +99,23 @@ brack = bracket2$new(
   train.fun = train.fun,
   performance.fun = performance.fun)
 
-# inspect configurations
-brack$configurations
-# 
+
+# the data matrix shows us the hyperparameters, the current budget and the performance
 brack$bracket.storage$data.matrix
+# 
+brack$visPerformances()
 # run the bracket
 brack$run()
 #
 brack$bracket.storage$data.matrix
+# 
+brack$visPerformances()
 # inspect the performance of the best model
 brack$getPerformances()
-# plot it
-plotThisBracket = data.table(brack$bracket.storage$data.matrix)
-data.frame(plotThisBracket[, mean(y), by = c("max_depth", "colsample_bytree", "subsample")])
-ggplot(data = brack$bracket.storage$data.matrix, aes(x = `current budget`, y = y, colour = "midnightblue")) +
-  scale_y_continuous(name = "MSE", limits = c(0, 0.4)) + 
-  scale_x_continuous(labels = function (x) floor(x), name = "epochs") + 
-  labs(colour = "") +
-  geom_line() +
-  theme(legend.position="none")
 
 
-## call hyperband
-hyperhyper = hyperband3(
+########### call hyperband ############ 
+hyperhyper = hyperband(
   max.ressources = 81, 
   prop.discard = 3,  
   max.perf = FALSE,
@@ -141,20 +124,6 @@ hyperhyper = hyperband3(
   sample.fun =  sample.fun,
   train.fun = train.fun, 
   performance.fun = performance.fun)
-
-bla = data.table(hyperhyper[[2]]$data.matrix)
-data.frame(bla[, mean(y), by = c("max_depth", "colsample_bytree", "subsample")])
-
-hyperhyper = hyperband3$new(
-  max.ressources = 81, 
-  prop.discard = 3,  
-  max.perf = FALSE,
-  id = "xgboost", 
-  par.set = configSpace, 
-  sample.fun =  sample.fun,
-  train.fun = train.fun, 
-  performance.fun = performance.fun
-)
 
 # get performance arbitrary bracket
 hyperhyper[[1]]$getPerformances()
