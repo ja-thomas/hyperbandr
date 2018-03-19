@@ -3,7 +3,7 @@
 \docType{data}
 \name{algorithmStorage}
 \alias{algorithmStorage}
-\title{R6 class to create bracketStorage objects}
+\title{R6 class to create algorithmStorage objects}
 \format{\code{\link{R6Class}} object}
 \usage{
 algorithmStorage
@@ -12,18 +12,28 @@ algorithmStorage
 Algorithm object
 }
 \description{
-An \code{\link[R6]{R6Class}} to save the results from each bracket
+An \code{\link[R6]{R6Class}} to save the results from each algorithm object, automatically created 
+when a new algorithm object is created.
 }
 \section{Fields}{
 
 \describe{
-\item{\code{configSpace}}{[\code{string}]\cr
-A configuration space constructed with makeParamSet from package ParamHelpers}
+\item{\code{config}}{[\code{string}]\cr
+An algorithm configuration}
+
+\item{\code{budget}}{[\code{string}]\cr
+The current budget}
+
+\item{\code{model}}{[\code{string}]\cr
+A model}
+
+\item{\code{performance}}{[\code{string}]\cr
+A performance function}
 }}
 
 \section{Methods}{
 
-\code{$writeDataBase(newline)} rbinds a new row \code{newline} with configurations to the data.matrix  \cr
+\code{$attachLines(newline)} rbind a new rows \code{newline} to the data.matrix  \cr
 }
 
 \keyword{datasets}

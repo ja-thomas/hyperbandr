@@ -40,27 +40,37 @@ List of brackets
 Runs hyperband
 }
 \examples{
-# simple example for the branin function (minimization problem)
-library("smoof")
-problem = makeBraninFunction()
 
-# configuration space:
+# we need some packages
+library("ggplot2")
+library("smoof")
+library("data.table")
+library("dplyr")
+
+# simple example for the branin function, a minimization problem
+problem = makeBraninFunction()
+opt = data.table(x1 = getGlobalOptimum(problem)$param$x1, x2 = getGlobalOptimum(problem)$param$x2)
+# the three red dots are global minima
+autoplot(problem) + geom_point(data = opt, aes(x = x1, y = x2), shape = 20, colour = "red", size = 5)
+
+# config space
 configSpace = makeParamSet(
-  makeNumericParam(id = "x1", lower = -5, upper = 10.1))
-  
-# sampling function:
-sample.fun = function(par.set, n.configs) {
- sampleValues(par = par.set, n = n.configs)
+    makeNumericParam(id = "x1", lower = -5, upper = 10.1))
+
+# sample fun
+sample.fun = function(par.set, n.configs, ...) {
+  sampleValues(par = par.set, n = n.configs)
 }
- 
-# model initialization function:
+
+# init fun
 init.fun = function(r, config) {
   x1 = unname(unlist(config))
   x2 = runif(1, 0, 15)
   mod = c(x1, x2)
   return(mod)
 }
-# training function:
+
+# train fun
 train.fun = function(mod, budget) {
   for(i in seq_len(budget)) {
     mod.new = c(mod[[1]], mod[[2]] + rnorm(1, sd = 3))
@@ -70,42 +80,23 @@ train.fun = function(mod, budget) {
   return(mod)
 }
 
-# performance function:
+# performance fun
 performance.fun = function(model) {
   problem(c(model[[1]], model[[2]]))
 }
-
-# compute hyperband:
+ 
+########### call hyperband ############ 
 hyperhyper = hyperband(
-  # hyperband
-  max.perf = FALSE, 
   max.ressources = 81, 
-  prop.discard = 3, 
-  id = "neural_net", 
+  prop.discard = 3,  
+  max.perf = FALSE,
+  id = "branin", 
   par.set = configSpace, 
   sample.fun =  sample.fun,
   train.fun = train.fun, 
-  performance.fun = performance.fun
-)
+  performance.fun = performance.fun)
 
-# visualize the results (red: global minima, blue: result of each bracket)
-opt = data.table(x1 = getGlobalOptimum(problem)$param$x1, x2 = getGlobalOptimum(problem)$param$x2)
-(vis = autoplot(problem) 
-  + geom_point(data = opt, aes(x = x1, y = x2), 
-               shape = 4, colour = "red", size = 5)
-  + geom_point(aes(x = hyperhyper[[1]]$models[[1]]$model[1], 
-                            y = hyperhyper[[1]]$models[[1]]$model[2]), 
-                        shape = 4, colour = "blue", size = 5)
-  + geom_point(aes(x = hyperhyper[[2]]$models[[1]]$model[1],
-                   y = hyperhyper[[2]]$models[[1]]$model[2]),
-               shape = 4, colour = "blue", size = 5) 
-  + geom_point(aes(x = hyperhyper[[3]]$models[[1]]$model[1],
-                   y = hyperhyper[[3]]$models[[1]]$model[2]),
-               shape = 4, colour = "blue", size = 5)
-  + geom_point(aes(x = hyperhyper[[4]]$models[[1]]$model[1],
-                   y = hyperhyper[[4]]$models[[1]]$model[2]),
-               shape = 4, colour = "blue", size = 5)
-  + geom_point(aes(x = hyperhyper[[5]]$models[[1]]$model[1],
-                   y = hyperhyper[[5]]$models[[1]]$model[2]),
-               shape = 4, colour = "blue", size = 5))
+# get performance arbitrary bracket
+lapply(hyperhyper, function(x) x$visPerformances())
+lapply(hyperhyper, function(x) x$getPerformances())
 }

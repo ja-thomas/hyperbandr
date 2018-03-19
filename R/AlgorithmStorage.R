@@ -1,17 +1,25 @@
-#' @title R6 class to create bracketStorage objects
+#' @title R6 class to create algorithmStorage objects
 #' @format \code{\link{R6Class}} object
 #'
 #' @description
-#' An \code{\link[R6]{R6Class}} to save the results from each bracket
+#' An \code{\link[R6]{R6Class}} to save the results from each algorithm object, automatically created 
+#' when a new algorithm object is created.
 #' 
-#' @field configSpace [\code{string}]\cr
-#' A configuration space constructed with makeParamSet from package ParamHelpers
+#' @field config [\code{string}]\cr
+#' An algorithm configuration
+#' @field budget [\code{string}]\cr
+#' The current budget
+#' @field model [\code{string}]\cr
+#' A model
+#' @field performance [\code{string}]\cr
+#' A performance function
 #'
 #' @section Methods:
-#' \code{$writeDataBase(newline)} rbinds a new row \code{newline} with configurations to the data.matrix  \cr
+#' \code{$attachLines(newline)} rbind a new rows \code{newline} to the data.matrix of the algorithmStorage object \cr
 #'
 #' @return Algorithm object
 #' @export
+
 
 algorithmStorage = R6Class("algorithmStorage",
   public = list(

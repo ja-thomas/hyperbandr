@@ -25,20 +25,28 @@
 #' @return Algorithm object
 #' @export
 #' @examples
-#' # simple example for the branin function (minimization problem)
+#' 
+#' # we need some packages
+#' library("ggplot2")
 #' library("smoof")
+#' library("data.table")
+#' 
+#' # simple example for the branin function, a minimization problem
 #' problem = makeBraninFunction()
-#' 
-#' # the red crosses are the three global minima:
 #' opt = data.table(x1 = getGlobalOptimum(problem)$param$x1, x2 = getGlobalOptimum(problem)$param$x2)
-#' (vis = autoplot(problem) 
-#'   + geom_point(data = opt, aes(x = x1, y = x2), 
-#'                shape = 4, colour = "red", size = 5) ) 
+#' # the three red dots are global minima
+#' autoplot(problem) + geom_point(data = opt, aes(x = x1, y = x2), shape = 20, colour = "red", size = 5)
 #' 
-#' # we choose a random x1 as our hyperpamater and optimize x2
-#' configuration = runif(1, -5, 10.1)
-#'  
-#' # model initialization function:
+#' # config space
+#' configSpace = makeParamSet(
+#'     makeNumericParam(id = "x1", lower = -5, upper = 10.1))
+#' 
+#' # sample fun
+#' sample.fun = function(par.set, n.configs, ...) {
+#'   sampleValues(par = par.set, n = n.configs)
+#' }
+#' 
+#' # init fun
 #' init.fun = function(r, config) {
 #'   x1 = unname(unlist(config))
 #'   x2 = runif(1, 0, 15)
@@ -46,7 +54,7 @@
 #'   return(mod)
 #' }
 #' 
-#' # training function:
+#' # train fun
 #' train.fun = function(mod, budget) {
 #'   for(i in seq_len(budget)) {
 #'     mod.new = c(mod[[1]], mod[[2]] + rnorm(1, sd = 3))
@@ -56,35 +64,37 @@
 #'   return(mod)
 #' }
 #' 
-#' # performance function:
+#' # performance fun
 #' performance.fun = function(model) {
 #'   problem(c(model[[1]], model[[2]]))
 #' }
 #' 
-#' # create the algorithm object
+#' ##### make branin algorithm object ####
 #' obj = algorithm$new(
 #'   id = "branin",
-#'   configuration = configuration,
+#'   configuration = sample.fun(par.set = configSpace, n.configs = 1)[[1]],
 #'   initial.budget = 0,
 #'   init.fun = init.fun,
 #'   train.fun = train.fun,
-#'   performance.fun = performance.fun
-#' )
+#'   performance.fun = performance.fun)
 #' 
-#' # get the performance of the model
+#' # we can inspect model of our algorithm object
+#' obj$model
+#' # the data matrix shows us the hyperparameters, the current budget and the performance
+#' obj$algorithm.result$data.matrix
+#' # if we are only interested in the performance, we can also call the getPerformance method
 #' obj$getPerformance()
-#' 
-#' # continue training for 100 iterations and get new performance
-#' obj$continue(100)
-#' obj$getPerformance()
-#' 
-#' # visualize the results (blue: result of the retrained model)
-#' opt = data.table(x1 = getGlobalOptimum(problem)$param$x1, x2 = getGlobalOptimum(problem)$param$x2)
-#' (vis = autoplot(problem) 
-#'   + geom_point(data = opt, aes(x = x1, y = x2), 
-#'                shape = 4, colour = "red", size = 5) 
-#'   + geom_point(aes(x = obj$model[[1]], y = obj$model[[2]]), 
-#'                shape = 4, colour = "blue", size = 5))
+#' # we can continue training our object for one iteration by calling
+#' obj$continue(1)
+#' # continue training for 18 iterations to obtain a total of 20 iterations
+#' invisible(capture.output(replicate(18, obj$continue(1))))
+#' # inspect model the model again
+#' obj$model
+#' # inspect the data matrix again
+#' obj$algorithm.result$data.matrix
+#' # let us visualize the validation error development
+#' obj$visPerformance()
+
 
 algorithm = R6Class("Algorithm",
   public = list(
@@ -128,6 +138,7 @@ algorithm = R6Class("Algorithm",
         scale_y_continuous(name = "performance") +
         scale_x_continuous(labels = function (x) floor(x), name = "budget") +
         theme(legend.position = "none") +
+        theme_minimal() +  
         geom_line(size = 0.5, colour = "cyan3")
       }
     }

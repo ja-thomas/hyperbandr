@@ -3,7 +3,7 @@
 \docType{data}
 \name{hyperStorage}
 \alias{hyperStorage}
-\title{R6 class to create bracketStorage objects}
+\title{R6 class to create hyperStorage objects}
 \format{\code{\link{R6Class}} object}
 \usage{
 hyperStorage
@@ -12,18 +12,20 @@ hyperStorage
 Algorithm object
 }
 \description{
-An \code{\link[R6]{R6Class}} to save the results from each bracket
+An \code{\link[R6]{R6Class}} to concatenate the results from each bracket object, automatically created 
+when the hyperband algorithm is called. Can be used to improve the configuration sample mechanism (e.g. MBO).
+Check the vignette for a detailed exampled.
 }
 \section{Fields}{
 
 \describe{
-\item{\code{configSpace}}{[\code{string}]\cr
-A configuration space constructed with makeParamSet from package ParamHelpers}
+\item{\code{par.set}}{[\code{string}]\cr
+The config space}
 }}
 
 \section{Methods}{
 
-\code{$writeDataBase(newline)} rbinds a new row \code{newline} with configurations to the data.matrix  \cr
+\code{$attachLines(newline)} rbinds rows \code{newline} to the data.matrix  \cr
 }
 
 \keyword{datasets}

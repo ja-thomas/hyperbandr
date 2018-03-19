@@ -1,17 +1,20 @@
-#' @title R6 class to create bracketStorage objects
+#' @title R6 class to create hyperStorage objects
 #' @format \code{\link{R6Class}} object
 #'
 #' @description
-#' An \code{\link[R6]{R6Class}} to save the results from each bracket
+#' An \code{\link[R6]{R6Class}} to concatenate the results from each bracket object, automatically created 
+#' when the hyperband algorithm is called. Can be used to improve the configuration sample mechanism (e.g. MBO).
+#' Check the vignette for a detailed exampled.
 #' 
-#' @field configSpace [\code{string}]\cr
-#' A configuration space constructed with makeParamSet from package ParamHelpers
+#' @field par.set [\code{string}]\cr
+#' The config space
 #'
 #' @section Methods:
-#' \code{$writeDataBase(newline)} rbinds a new row \code{newline} with configurations to the data.matrix  \cr
+#' \code{$attachLines(newline)} rbinds rows \code{newline} to the data.matrix of the hyperStorage object \cr
 #'
 #' @return Algorithm object
 #' @export
+
 
 hyperStorage = R6Class("hyperStorage",
   public = list(
@@ -19,7 +22,6 @@ hyperStorage = R6Class("hyperStorage",
     col.names = NULL,
     # initialize the bracketStorage object as a data fame 
     initialize = function(par.set) {
-      #self$data.matrix = bracket$bracket.storage$data.matrix
       self$data.matrix = data.frame(matrix(ncol = length(par.set$pars) + 2, nrow = 0))
       self$col.names = c(names(par.set$pars), "current_budget", "y")
       colnames(self$data.matrix) = self$col.names

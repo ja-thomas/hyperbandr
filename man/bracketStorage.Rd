@@ -12,18 +12,19 @@ bracketStorage
 Algorithm object
 }
 \description{
-An \code{\link[R6]{R6Class}} to save the results from each bracket
+An \code{\link[R6]{R6Class}} to save the results from each bracket object, automatically created 
+when a new bracket object is created.
 }
 \section{Fields}{
 
 \describe{
-\item{\code{configSpace}}{[\code{string}]\cr
-A configuration space constructed with makeParamSet from package ParamHelpers}
+\item{\code{models}}{[\code{string}]\cr
+A list of models}
 }}
 
 \section{Methods}{
 
-\code{$writeDataBase(newline)} rbinds a new row \code{newline} with configurations to the data.matrix  \cr
+\code{$attachLines(newline)} rbinds rows \code{newline} to the data.matrix  \cr
 }
 
 \keyword{datasets}

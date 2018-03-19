@@ -2,21 +2,22 @@
 #' @format \code{\link{R6Class}} object
 #'
 #' @description
-#' An \code{\link[R6]{R6Class}} to save the results from each bracket
+#' An \code{\link[R6]{R6Class}} to save the results from each bracket object, automatically created 
+#' when a new bracket object is created.
 #' 
-#' @field configSpace [\code{string}]\cr
-#' A configuration space constructed with makeParamSet from package ParamHelpers
+#' @field models [\code{string}]\cr
+#' A list of models
 #'
 #' @section Methods:
-#' \code{$writeDataBase(newline)} rbinds a new row \code{newline} with configurations to the data.matrix  \cr
+#' \code{$attachLines(newline)} rbinds rows \code{newline} to the data.matrix of the bracketStorage object \cr
 #'
 #' @return Algorithm object
 #' @export
 
+
 bracketStorage = R6Class("bracketStorage",
   public = list(
     data.matrix = NULL,
-    #col.names = NULL,
     # initialize the bracketStorage object as a data fame
     initialize = function(models) {
       self$data.matrix = do.call(rbind, lapply(models, 
