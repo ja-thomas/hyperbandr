@@ -21,7 +21,7 @@ hyperStorage = R6Class("hyperStorage",
     initialize = function(par.set) {
       #self$data.matrix = bracket$bracket.storage$data.matrix
       self$data.matrix = data.frame(matrix(ncol = length(par.set$pars) + 2, nrow = 0))
-      self$col.names = c(names(par.set$pars), "current budget", "y")
+      self$col.names = c(names(par.set$pars), "current_budget", "y")
       colnames(self$data.matrix) = self$col.names
     },
     # method to rbind a new line to the data.matrix

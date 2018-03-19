@@ -42,7 +42,7 @@ sample.fun = function(par.set, n.configs, bracket.storage) {
     ctrl = makeMBOControl(propose.points = n.configs)
     ctrl = setMBOControlInfill(ctrl, crit = crit.cb)
     designMBO = data.table(bracket.storage)
-    designMBO = data.frame(designMBO[, mean(y), by = c("max_depth", "colsample_bytree", "subsample")])
+    designMBO = data.frame(designMBO[, mean(y), by = names(configSpace$pars)])
     colnames(designMBO) = colnames(bracket.storage)[-4]
     opt.state = initSMBO(
       par.set = configSpace, 
@@ -85,21 +85,18 @@ performance.fun = function(model, ...) {
 ############# applications ############
 #######################################
 
-## call hyperband
-hyperhyper = hyperband3(
+########### call hyperband ############ 
+hyperhyperMBO = hyperband(
   max.ressources = 81, 
   prop.discard = 3,  
   max.perf = FALSE,
-  id = "xgboost", 
+  id = "xgboost_MBO", 
   par.set = configSpace, 
   sample.fun =  sample.fun,
   train.fun = train.fun, 
   performance.fun = performance.fun)
 
 # get performance arbitrary bracket
-hyperhyper[[1]]$getPerformances()
-hyperhyper[[2]]$getPerformances()
-hyperhyper[[3]]$getPerformances()
-hyperhyper[[4]]$getPerformances()
-hyperhyper[[5]]$getPerformances()
+lapply(hyperhyperMBO, function(x) x$visPerformances())
+lapply(hyperhyperMBO, function(x) x$getPerformances())
 

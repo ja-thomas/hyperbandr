@@ -201,7 +201,7 @@ bracket = R6Class("Bracket",
       # some dplyr magic to prepare the bracket data for plotting
         help.df = self$bracket.storage$data.matrix %>%
           select(1:length(self$par.set$pars)) %>% unique() %>% mutate(configuration = 1:nrow(.))
-        group.names = names(self$bracket.storage$data.matrix)[1:3]
+        group.names = names(self$bracket.storage$data.matrix)[1:length(self$par.set$pars)]
         df.gg = self$bracket.storage$data.matrix %>% left_join(help.df, by = group.names) %>%
           group_by_at(vars(one_of(group.names))) %>% mutate(count = n())
         df.gg$configuration = as.factor(df.gg$configuration)

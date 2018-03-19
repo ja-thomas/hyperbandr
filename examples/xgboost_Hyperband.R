@@ -6,6 +6,7 @@ library("devtools")
 load_all()
 library("mlr")
 library("xgboost")
+library("dplyr")
 library("ggplot2")
 
 
@@ -102,15 +103,13 @@ brack = bracket$new(
 
 # the data matrix shows us the hyperparameters, the current budget and the performance
 brack$bracket.storage$data.matrix
-# 
-brack$visPerformances()
 # run the bracket
 brack$run()
-#
+# inspect the data matrix again
 brack$bracket.storage$data.matrix
-# 
+# visualize the the bracket
 brack$visPerformances()
-# inspect the performance of the best model
+# access the performance of the best model
 brack$getPerformances()
 
 
@@ -126,9 +125,6 @@ hyperhyper = hyperband(
   performance.fun = performance.fun)
 
 # get performance arbitrary bracket
-hyperhyper[[1]]$getPerformances()
-hyperhyper[[2]]$getPerformances()
-hyperhyper[[3]]$getPerformances()
-hyperhyper[[4]]$getPerformances()
-hyperhyper[[5]]$getPerformances()
+lapply(hyperhyper, function(x) x$visPerformances())
+lapply(hyperhyper, function(x) x$getPerformances())
 

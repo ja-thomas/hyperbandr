@@ -34,7 +34,7 @@ configSpace = makeParamSet(
     makeNumericParam(id = "x1", lower = -5, upper = 10.1))
 
 # sample fun
-sample.fun = function(par.set, n.configs) {
+sample.fun = function(par.set, n.configs, ...) {
   sampleValues(par = par.set, n = n.configs)
 }
 
@@ -66,7 +66,7 @@ performance.fun = function(model) {
 ############# applications ############
 #######################################
 
-## make branin algorithm object
+##### make branin algorithm object ####
 obj = algorithm$new(
   id = "branin",
   configuration = sample.fun(par.set = configSpace, n.configs = 1)[[1]],
@@ -74,18 +74,25 @@ obj = algorithm$new(
   init.fun = init.fun,
   train.fun = train.fun,
   performance.fun = performance.fun)
-
-# inspect model
+# we can inspect model of our algorithm object
 obj$model
-# inspect performance
+# the data matrix shows us the hyperparameters, the current budget and the performance
+obj$algorithm.result$data.matrix
+# if we are only interested in the performance, we can also call the getPerformance method
 obj$getPerformance()
-# continue training for 10 iterations
-obj$continue(10)
-# inspect performance again
-obj$getPerformance()
+# we can continue training our object for one iteration by calling
+obj$continue(1)
+# continue training for 18 iterations to obtain a total of 20 iterations
+invisible(capture.output(replicate(18, obj$continue(1))))
+# inspect model the model again
+obj$model
+# inspect the data matrix again
+obj$algorithm.result$data.matrix
+# let us visualize the validation error development
+obj$visPerformance()
 
 
-## make branin bracket object
+###### make branin bracket object #####
 brack = bracket$new(
   max.perf = FALSE,
   max.ressources = 81,
@@ -98,20 +105,23 @@ brack = bracket$new(
   train.fun = train.fun,
   performance.fun = performance.fun)
 
-# inspect configurations
-brack$configurations
+# the data matrix shows us the hyperparameters, the current budget and the performance
+brack$bracket.storage$data.matrix
 # run the bracket
 brack$run()
-# inspect the performance of the best model
+# inspect the data matrix again
+brack$bracket.storage$data.matrix
+# visualize the the bracket
+brack$visPerformances()
+# access the performance of the best model
 brack$getPerformances()
 
 
-## call hyperband
+########### call hyperband ############ 
 hyperhyper = hyperband(
   max.ressources = 81, 
   prop.discard = 3,  
   max.perf = FALSE,
-  export.bracket.storage = TRUE,
   id = "branin", 
   par.set = configSpace, 
   sample.fun =  sample.fun,
@@ -119,13 +129,10 @@ hyperhyper = hyperband(
   performance.fun = performance.fun)
 
 # get performance arbitrary bracket
-hyperhyper[[1]]$getPerformances()
-hyperhyper[[2]]$getPerformances()
-hyperhyper[[3]]$getPerformances()
-hyperhyper[[4]]$getPerformances()
-hyperhyper[[5]]$getPerformances()
+lapply(hyperhyper, function(x) x$visPerformances())
+lapply(hyperhyper, function(x) x$getPerformances())
 
-# visualize results of all brackets
+# visualize the final results of all brackets
 data = data.frame(matrix(nrow = 5, ncol = 2))
 for(i in 1:5) {
   data[i, 1] = hyperhyper[[i]]$models[[1]]$model[1]

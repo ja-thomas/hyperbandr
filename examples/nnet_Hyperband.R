@@ -41,12 +41,13 @@ print(problem)
 
 # config space
 configSpace = makeParamSet(
-  makeNumericParam(id = "learning.rate", lower = 0.05, upper = 0.3),
-  makeNumericParam(id = "momentum", lower = 0.7, upper = 0.99),
+  makeNumericParam(id = "learning.rate", lower = 0.01, upper = 0.5),
+  makeNumericParam(id = "momentum", lower = 0.1, upper = 0.99),
   makeIntegerParam(id = "layers", lower = 1L, upper = 2L),
   makeIntegerParam(id = "num.layer1", lower = 4L, upper = 8L),
   makeIntegerParam(id = "num.layer2", lower = 8L, upper = 16L),
-  makeDiscreteParam(id = "act1", c("tanh", "relu", "sigmoid")))
+  makeDiscreteParam(id = "act1", c("tanh", "relu", "sigmoid")),
+  makeDiscreteParam(id = "act2", c("tanh", "relu", "sigmoid")))
 
 # sample fun
 sample.fun = function(par.set, n.configs, ...) {
@@ -85,7 +86,7 @@ performance.fun = function(model) {
 
 #### make xgboost algorithm object ####
 obj = algorithm$new(
-  id = "neural_net",
+  id = "nnet",
   configuration = sample.fun(par.set = configSpace, n.configs = 1)[[1]],
   initial.budget = 1,
   init.fun = init.fun,
@@ -117,48 +118,36 @@ brack = bracket$new(
   prop.discard = 3,
   s = 4,
   B = (4 + 1)*81,
-  id = "neural_net",
+  id = "nnet",
   par.set = configSpace,
   sample.fun = sample.fun,
   train.fun = train.fun,
   performance.fun = performance.fun)
 
-
 # the data matrix shows us the hyperparameters, the current budget and the performance
 brack$bracket.storage$data.matrix
-# 
-brack$visPerformances()
 # run the bracket
 brack$run()
-#
+# inspect the data matrix again
 brack$bracket.storage$data.matrix
-# 
+# visualize the the bracket
 brack$visPerformances()
-# inspect the performance of the best model
+# access the performance of the best model
 brack$getPerformances()
 
 
-## call hyperband
+########### call hyperband ############ 
 hyperhyper = hyperband(
   max.ressources = 81, 
   prop.discard = 3,  
   max.perf = TRUE,
-  id = "neural_net", 
+  id = "nnet", 
   par.set = configSpace, 
   sample.fun =  sample.fun,
   train.fun = train.fun, 
   performance.fun = performance.fun)
 
-
 # get performance arbitrary bracket
-hyperhyper[[1]]$getPerformances()
-hyperhyper[[1]]$visPerformances()
-hyperhyper[[2]]$getPerformances()
-hyperhyper[[2]]$visPerformances()
-hyperhyper[[3]]$getPerformances()
-hyperhyper[[3]]$visPerformances()
-hyperhyper[[4]]$getPerformances()
-hyperhyper[[4]]$visPerformances()
-hyperhyper[[5]]$getPerformances()
-hyperhyper[[5]]$visPerformances()
+lapply(hyperhyper, function(x) x$visPerformances())
+lapply(hyperhyper, function(x) x$getPerformances())
 
