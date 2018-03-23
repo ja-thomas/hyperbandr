@@ -6,9 +6,13 @@ library("devtools")
 load_all()
 library("mlr")
 library("mlrMBO")
+library("rgenoud")
 library("smoof")
 library("ggplot2")
 library("data.table")
+library("dplyr")
+library("ggrepel")
+
 
 ####################################
 ## define the problem to optimize ##
@@ -24,6 +28,7 @@ print(problem)
 
 # smoof functions contain a param.set describing types and bounds of the function parameters
 (param.set = getParamSet(problem))
+
 
 #######################################
 ## define functions to use hyperband ##

@@ -81,7 +81,7 @@
 #'   train.fun = train.fun, 
 #'   performance.fun = performance.fun)
 #' 
-#' # get performance arbitrary bracket
+#' # get performance and visualize brackets
 #' lapply(hyperhyper, function(x) x$visPerformances())
 #' lapply(hyperhyper, function(x) x$getPerformances())
 

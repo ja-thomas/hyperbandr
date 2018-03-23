@@ -7,8 +7,11 @@ load_all()
 library("mlr")
 library("smoof")
 library("ggplot2")
-library("ggrepel")
+library("gridExtra")
+library("dplyr")
 library("data.table")
+library("ggrepel")
+
 
 ####################################
 ## define the problem to optimize ##
@@ -24,6 +27,7 @@ print(problem)
 
 # smoof functions contain a param.set describing types and bounds of the function parameters
 (param.set = getParamSet(problem))
+
 
 #######################################
 ## define functions to use hyperband ##
@@ -66,14 +70,15 @@ performance.fun = function(model) {
 ############# applications ############
 #######################################
 
-##### make branin algorithm object ####
+#### make branin algorithm object ####
 obj = algorithm$new(
   id = "branin",
   configuration = sample.fun(par.set = configSpace, n.configs = 1)[[1]],
-  initial.budget = 0,
+  initial.budget = 1,
   init.fun = init.fun,
   train.fun = train.fun,
   performance.fun = performance.fun)
+
 # we can inspect model of our algorithm object
 obj$model
 # the data matrix shows us the hyperparameters, the current budget and the performance
@@ -82,15 +87,16 @@ obj$algorithm.result$data.matrix
 obj$getPerformance()
 # we can continue training our object for one iteration by calling
 obj$continue(1)
+# inspect of the data matrix has changed
+obj$algorithm.result$data.matrix
 # continue training for 18 iterations to obtain a total of 20 iterations
 invisible(capture.output(replicate(18, obj$continue(1))))
 # inspect model the model again
 obj$model
 # inspect the data matrix again
 obj$algorithm.result$data.matrix
-# let us visualize the validation error development
+# we can immediately visualize the performance function
 obj$visPerformance()
-
 
 ###### make branin bracket object #####
 brack = bracket$new(
@@ -116,7 +122,6 @@ brack$visPerformances()
 # access the performance of the best model
 brack$getPerformances()
 
-
 ########### call hyperband ############ 
 hyperhyper = hyperband(
   max.ressources = 81, 
@@ -128,18 +133,13 @@ hyperhyper = hyperband(
   train.fun = train.fun, 
   performance.fun = performance.fun)
 
-# get performance arbitrary bracket
-lapply(hyperhyper, function(x) x$visPerformances())
+# visualize the brackets and get the best performance of each bracket
+hyperVis(hyperhyper)
 lapply(hyperhyper, function(x) x$getPerformances())
 
 # visualize the final results of all brackets
-data = data.frame(matrix(nrow = 5, ncol = 2))
-for(i in 1:5) {
-  data[i, 1] = hyperhyper[[i]]$models[[1]]$model[1]
-  for(j in 1:5) {
-    data[j, 2] = hyperhyper[[j]]$models[[1]]$model[2]
-  }
-}
+results = lapply(hyperhyper, function(x) x$models[[1]]$model)
+data = data.frame(matrix(unlist(results), ncol = 2, byrow = TRUE))
 rownames(data) = c("bracket 1", "bracket 2", "bracket 3", "bracket 4", "bracket 5")
 colnames(data) = c("x1", "x2")
 

@@ -1,11 +1,12 @@
 ---
-title: "Hyperbandr Tutorial"
+title: "hyperbandr tutorial"
 author: "Niklas"
-date: "February 21, 2018"
-output:
-  pdf_document: default
-  html_document: default
+date: "23 März 2018"
+output: pdf_document
+header-includes:
+  - \usepackage{graphicx}
 ---
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -34,17 +35,17 @@ library("data.table")
 library("ggplot2")
 ```
 
-```{r, echo = TRUE, fig.height = 3.6, fig.width = 6, fig.align = "center"}
+```{r, echo = TRUE, fig.height = 3.6, fig.width = 6}
 problem = makeBraninFunction()
 
-# the branin function has 3 global minima (red crosses)
+# the branin function has 3 global minima (red dots)
 opt = data.table(x1 = getGlobalOptimum(problem)$param$x1, 
                  x2 = getGlobalOptimum(problem)$param$x2)
 
-(vis = autoplot(problem) + geom_point(data = opt, aes(x = x1, y = x2), 
-                                      shape = 4, colour = "red", size = 5))
-
+(vis = autoplot(problem) + 
+    geom_point(data = opt, aes(x = x1, y = x2), shape = 20, colour = "red", size = 5))
 ```
+
 
 We treat the value of $x_1$ as our "configuration" and try to find the optimal value for $x_2$, our "hyperparameter" (reminder: in hyperband we sample random configurations in each bracket).
 
@@ -68,7 +69,8 @@ Now we need a function to sample configurations from the configuration space
 ```{r, echo = TRUE}
 # par.set: the parameter space to sample from
 # n.configs: the amount of configs to sample
-sample.fun = function(par.set, n.configs) {
+# ...: additional parameters (see example ...........)
+sample.fun = function(par.set, n.configs, ...) {
   sampleValues(par = par.set, n = n.configs)
 }
 ```
@@ -111,7 +113,7 @@ train.fun = function(mod, budget) {
 Finally, we define a function to evaluate the performance of each model
 
 ```{r, echo = TRUE}
-# model: the model to evaluate 
+# model: the model to evaluate
 performance.fun = function(model) {
   problem(c(model[[1]], model[[2]]))
 }
@@ -127,13 +129,13 @@ load_all()
 
 ```{r, echo = TRUE}
 hyperhyper = hyperband(
-  max.perf = FALSE, 
-  max.ressources = 81, 
-  prop.discard = 3, 
-  id = "branin", 
-  par.set = configSpace, 
+  max.ressources = 81,
+  prop.discard = 3,
+  max.perf = FALSE,
+  id = "branin",
+  par.set = configSpace,
   sample.fun =  sample.fun,
-  train.fun = train.fun, 
+  train.fun = train.fun,
   performance.fun = performance.fun)
 ```
 
@@ -165,13 +167,13 @@ benchmarkThis = function(howManyIt = 10L) {
   for (i in 1:howManyIt) {
     catf("Iteration %i", i)
     hyperhyper = hyperband(
-      max.perf = FALSE, 
-      max.ressources = 81, 
-      prop.discard = 3, 
-      id = "branin", 
-      par.set = configSpace, 
+      max.perf = FALSE,
+      max.ressources = 81,
+      prop.discard = 3,
+      id = "branin",
+      par.set = configSpace,
       sample.fun =  sample.fun,
-      train.fun = train.fun, 
+      train.fun = train.fun,
       performance.fun = performance.fun)
     results[i, 1] = round(hyperhyper[[1]]$getPerformances(), digits = 2)
     results[i, 2] = round(hyperhyper[[2]]$getPerformances(), digits = 2)
@@ -186,9 +188,9 @@ myBraninBenchmark = benchmarkThis(100)
 ```
 
 ```{r, echo = FALSE, message = FALSE}
-ggplot(stack(myBraninBenchmark), aes(x = ind, y = values, fill = ind)) + 
-  scale_x_discrete(labels=c("bracket 1","bracket 2","bracket 3","bracket 4", "bracket 5")) + 
-  theme(legend.position = "none") + labs(x = "", y = "performance") + 
+ggplot(stack(myBraninBenchmark), aes(x = ind, y = values, fill = ind)) +
+  scale_x_discrete(labels=c("bracket 1","bracket 2","bracket 3","bracket 4", "bracket 5")) +
+  theme(legend.position = "none") + labs(x = "", y = "performance") +
   geom_boxplot()
 ```
 

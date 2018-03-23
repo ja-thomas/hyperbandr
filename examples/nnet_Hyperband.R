@@ -7,6 +7,8 @@ load_all()
 library("mxnet") 
 library("mlr") # you might need to install mxnet branch of mlr: devtools::install_github("mlr-org/mlr", ref = "mxnet")
 library("ggplot2")
+library("gridExtra")
+library("dplyr")
 library("data.table")
 
 
@@ -34,6 +36,7 @@ problem = makeClassifTask(data = mnist, target = "label")
 
 # each class has 600 samples
 print(problem)
+
 
 #######################################
 ## define functions to use hyperband ##
@@ -80,11 +83,12 @@ performance.fun = function(model) {
   performance(pred, measures = acc)
 }
 
+
 #######################################
 ############# applications ############
 #######################################
 
-#### make xgboost algorithm object ####
+#### make neural net algorithm object ####
 obj = algorithm$new(
   id = "nnet",
   configuration = sample.fun(par.set = configSpace, n.configs = 1)[[1]],
@@ -101,17 +105,18 @@ obj$algorithm.result$data.matrix
 obj$getPerformance()
 # we can continue training our object for one iteration by calling
 obj$continue(1)
+# inspect of the data matrix has changed
+obj$algorithm.result$data.matrix
 # continue training for 18 iterations to obtain a total of 20 iterations
 invisible(capture.output(replicate(18, obj$continue(1))))
 # inspect model the model again
 obj$model
 # inspect the data matrix again
 obj$algorithm.result$data.matrix
-# let us visualize the validation error development
+# we can immediately visualize the performance function
 obj$visPerformance()
 
-
-##### make xgboost bracket object #####
+###### make neural net bracket object #####
 brack = bracket$new(
   max.perf = TRUE,
   max.ressources = 81,
@@ -135,7 +140,6 @@ brack$visPerformances()
 # access the performance of the best model
 brack$getPerformances()
 
-
 ########### call hyperband ############ 
 hyperhyper = hyperband(
   max.ressources = 81, 
@@ -147,7 +151,7 @@ hyperhyper = hyperband(
   train.fun = train.fun, 
   performance.fun = performance.fun)
 
-# get performance arbitrary bracket
-lapply(hyperhyper, function(x) x$visPerformances())
+# visualize the brackets and get the best performance of each bracket
+hyperVis(hyperhyper)
 lapply(hyperhyper, function(x) x$getPerformances())
 

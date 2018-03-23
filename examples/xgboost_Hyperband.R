@@ -6,8 +6,8 @@ library("devtools")
 load_all()
 library("mlr")
 library("xgboost")
-library("dplyr")
 library("ggplot2")
+library("dplyr")
 
 
 #######################################
@@ -77,17 +77,18 @@ obj$algorithm.result$data.matrix
 obj$getPerformance()
 # we can continue training our object for one iteration by calling
 obj$continue(1)
+# inspect of the data matrix has changed
+obj$algorithm.result$data.matrix
 # continue training for 18 iterations to obtain a total of 20 iterations
 invisible(capture.output(replicate(18, obj$continue(1))))
 # inspect model the model again
 obj$model
 # inspect the data matrix again
 obj$algorithm.result$data.matrix
-# let us visualize the validation error development
+# we can immediately visualize the performance function
 obj$visPerformance()
 
-
-##### make xgboost bracket object #####
+###### make xgboost bracket object #####
 brack = bracket$new(
   max.perf = FALSE,
   max.ressources = 81,
@@ -100,7 +101,6 @@ brack = bracket$new(
   train.fun = train.fun,
   performance.fun = performance.fun)
 
-
 # the data matrix shows us the hyperparameters, the current budget and the performance
 brack$bracket.storage$data.matrix
 # run the bracket
@@ -111,7 +111,6 @@ brack$bracket.storage$data.matrix
 brack$visPerformances()
 # access the performance of the best model
 brack$getPerformances()
-
 
 ########### call hyperband ############ 
 hyperhyper = hyperband(
@@ -124,7 +123,7 @@ hyperhyper = hyperband(
   train.fun = train.fun, 
   performance.fun = performance.fun)
 
-# get performance arbitrary bracket
-lapply(hyperhyper, function(x) x$visPerformances())
+# visualize the brackets and get the best performance of each bracket
+hyperVis(hyperhyper)
 lapply(hyperhyper, function(x) x$getPerformances())
 

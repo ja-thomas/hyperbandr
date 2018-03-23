@@ -33,7 +33,7 @@ A performance function}
 
 \section{Methods}{
 
-\code{$attachLines(newline)} rbind a new rows \code{newline} to the data.matrix  \cr
+\code{$attachLines(newline)} rbind a new rows \code{newline} to the data.matrix of the algorithmStorage object \cr
 }
 
 \keyword{datasets}

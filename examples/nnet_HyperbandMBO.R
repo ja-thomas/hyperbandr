@@ -108,7 +108,7 @@ performance.fun = function(model) {
 #######################################
 
 ########### call hyperband ############ 
-hyperhyper = hyperband(
+hyperhyperMBO = hyperband(
   max.ressources = 81, 
   prop.discard = 3,  
   max.perf = TRUE,
@@ -118,8 +118,7 @@ hyperhyper = hyperband(
   train.fun = train.fun, 
   performance.fun = performance.fun)
 
-# get performance arbitrary bracket
-lapply(hyperhyper, function(x) x$visPerformances())
-lapply(hyperhyper, function(x) x$getPerformances())
-
+# visualize the brackets and get the best performance of each bracket
+hyperVis(hyperhyperMBO)
+lapply(hyperhyperMBO, function(x) x$getPerformances())
 

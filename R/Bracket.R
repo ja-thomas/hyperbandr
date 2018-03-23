@@ -201,7 +201,7 @@ bracket = R6Class("Bracket",
         self$models[[1]]$current.budget)
     },
     ## method to visualize the bracket performance
-    visPerformances = function() {
+    visPerformances = function(make.labs = TRUE, ...) {
       if (dim(self$bracket.storage$data.matrix)[1] == self$n.configs) {
         catf("execute $run() or $step() before using $visPerformances()")
       } else {
@@ -213,10 +213,14 @@ bracket = R6Class("Bracket",
           group_by_at(vars(one_of(group.names))) %>% mutate(count = n())
         df.gg$configuration = as.factor(df.gg$configuration)
       # plot the mutated data
+        y.lab = ifelse(make.labs == TRUE, "performance", "")
+        x.lab = ifelse(make.labs == TRUE, "budget", "")
         ggplot(df.gg, aes(x = current_budget, y = y, colour = configuration)) +
-          scale_y_continuous(name = "performance") +
-          scale_x_continuous(labels = function (x) floor(x), name = "budget") +
-          theme_minimal() + 
+          scale_y_continuous(name = y.lab, ...) +
+          scale_x_continuous(labels = function (x) floor(x), name = x.lab) + 
+          theme_minimal() +
+          theme(plot.title = element_text(hjust = 0.5)) +
+          ggtitle(paste0("bracket ", self$s)) +
           geom_point(show.legend = FALSE) +
           geom_line(data = df.gg[df.gg$count > 1, ], 
             aes(x = current_budget, y = y, colour = configuration), show.legend = FALSE)

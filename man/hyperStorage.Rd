@@ -25,7 +25,7 @@ The config space}
 
 \section{Methods}{
 
-\code{$attachLines(newline)} rbinds rows \code{newline} to the data.matrix  \cr
+\code{$attachLines(newline)} rbinds rows \code{newline} to the data.matrix of the hyperStorage object \cr
 }
 
 \keyword{datasets}

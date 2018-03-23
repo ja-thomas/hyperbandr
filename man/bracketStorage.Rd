@@ -24,7 +24,7 @@ A list of models}
 
 \section{Methods}{
 
-\code{$attachLines(newline)} rbinds rows \code{newline} to the data.matrix  \cr
+\code{$attachLines(newline)} rbinds rows \code{newline} to the data.matrix of the bracketStorage object \cr
 }
 
 \keyword{datasets}
