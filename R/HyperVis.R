@@ -74,17 +74,23 @@
 
 
 hyperVis = function(hyper.object, rows = 1, cols = length(hyper.object)) {
-  # get lower limit ( = floor(min observed performance over all brackets))
+  ## get lower limit ( = floor(min observed performance over all brackets))
   perfLowerLim = floor(min(unlist(lapply(hyper.object,
     function(x) min(x$bracket.storage$data.matrix$y)))))
-  # get upper limit ( = ceiling(max observed performance over all brackets))
-  perfUpperLim = ceiling(max(unlist(lapply(hyper.object,
-    function(x) max(x$bracket.storage$data.matrix$y)))))
+  ## get upper limit:
+  # if ceiling(max observed performance)  = 1  => round one digit
+  # if ceiling(max observed performance) != 1  => use ceiling
+  perfUpperLim = ifelse(ceiling(max(unlist(lapply(hyper.object,
+      function(x) max(x$bracket.storage$data.matrix$y))))) == 1, 
+    round(max(unlist(lapply(hyper.object, 
+      function(x) max(x$bracket.storage$data.matrix$y)))), digits = 1),
+    ceiling(max(unlist(lapply(hyper.object,
+      function(x) max(x$bracket.storage$data.matrix$y))))))
   # plot list
   plotList = lapply(hyper.object, 
-    function(x) x$visPerformances(make.labs = FALSE,limits = c(perfLowerLim, perfUpperLim)))
+    function(x) x$visPerformances(make.labs = FALSE, limits = c(perfLowerLim, perfUpperLim)))
   # plot brackets in
-  do.call("grid.arrange", c(plotList, ncol = cols, bottom = "performance", left = "budget"))
+  do.call("grid.arrange", c(plotList, ncol = cols, bottom = "budget", left = "performance"))
 }
 
 
