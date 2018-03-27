@@ -83,7 +83,7 @@ hyperVis = function(hyper.object, rows = 1, cols = length(hyper.object)) {
   perfUpperLim = ifelse(ceiling(max(unlist(lapply(hyper.object,
       function(x) max(x$bracket.storage$data.matrix$y))))) == 1, 
     round(max(unlist(lapply(hyper.object, 
-      function(x) max(x$bracket.storage$data.matrix$y)))), digits = 1),
+      function(x) max(x$bracket.storage$data.matrix$y)))), digits = 2),
     ceiling(max(unlist(lapply(hyper.object,
       function(x) max(x$bracket.storage$data.matrix$y))))))
   # plot list

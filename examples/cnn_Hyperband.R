@@ -44,16 +44,9 @@ print(problem)
 
 # config space
 configSpace = makeParamSet(
-  makeNumericParam(id = "learning.rate", lower = 0.01, upper = 0.3),
+  makeNumericParam(id = "learning.rate", lower = 0.001, upper = 0.1),
   makeNumericParam(id = "momentum", lower = 0.5, upper = 0.99),
-  makeIntegerParam(id = "num.layer1", lower = 1L, upper = 100L),
-  makeIntegerParam(id = "num.layer2", lower = 1L, upper = 100L),
-  makeIntegerParam(id = "num.layer3", lower = 1L, upper = 100L),
-  makeDiscreteParam(id = "act1", c("tanh", "relu", "sigmoid")),
-  makeDiscreteParam(id = "act2", c("tanh", "relu", "sigmoid")),
-  makeDiscreteParam(id = "act3", c("tanh", "relu", "sigmoid")),
-  makeLogicalParam(id = "dropout.global"),
-  makeNumericParam(id = "dropout.input", lower = 0.2, upper = 0.8),
+  makeNumericParam(id = "dropout.input", lower = 0.1, upper = 0.9),
   makeLogicalParam(id = "batch.normalization"))
   
 # sample fun
@@ -65,6 +58,7 @@ sample.fun = function(par.set, n.configs, ...) {
 init.fun = function(r, config) {
   lrn = makeLearner("classif.mxff",
     layers = 3, conv.layer1 = TRUE, conv.layer2 = TRUE, conv.layer3 = TRUE,
+    num.layer1 = 16, num.layer2 = 32, num.layer3 = 64,
     conv.kernel1 = c(3,3), conv.stride1 = c(1,1), pool.kernel1 = c(2,2), pool.stride1 = c(2,2),
     conv.kernel2 = c(3,3), conv.stride2 = c(1,1), pool.kernel2 = c(2,2), pool.stride2 = c(2,2),
     conv.kernel3 = c(3,3), conv.stride3 = c(1,1), pool.kernel3 = c(2,2), pool.stride3 = c(2,2),
@@ -93,12 +87,6 @@ performance.fun = function(model) {
   performance(pred, measures = acc)
 }
 
-mod1 = init.fun(r = 1, config = sample.fun(par.set = configSpace, n.configs = 1)[[1]])
-mod1
-mod2 = train.fun(mod = mod1, budget = 3)
-mod2
-performance.fun(mod1)
-performance.fun(mod2)
 
 #######################################
 ############# applications ############
@@ -120,11 +108,11 @@ obj$algorithm.result$data.matrix
 # if we are only interested in the performance, we can also call the getPerformance method
 obj$getPerformance()
 # we can continue training our object for one iteration by calling
-obj$continue(1)
+obj$continue(3)
 # inspect of the data matrix has changed
 obj$algorithm.result$data.matrix
-# continue training for 18 iterations to obtain a total of 20 iterations
-invisible(capture.output(replicate(18, obj$continue(1))))
+# continue training for 15 iterations to obtain a total of 20 iterations
+invisible(capture.output(replicate(3, obj$continue(5))))
 # inspect model the model again
 obj$model
 # inspect the data matrix again

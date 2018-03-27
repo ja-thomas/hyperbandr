@@ -6,6 +6,7 @@ library("devtools")
 load_all()
 library("mxnet") 
 library("mlr") # you might need to install mxnet branch of mlr: devtools::install_github("mlr-org/mlr", ref = "mxnet")
+library("mlrMBO")
 library("randomForest") # for MBO
 library("ggplot2")
 library("data.table")
@@ -44,11 +45,9 @@ print(problem)
 configSpace = makeParamSet(
   makeNumericParam(id = "learning.rate", lower = 0.01, upper = 0.5),
   makeNumericParam(id = "momentum", lower = 0.1, upper = 0.99),
-  makeIntegerParam(id = "layers", lower = 1L, upper = 2L),
-  makeIntegerParam(id = "num.layer1", lower = 4L, upper = 8L),
-  makeIntegerParam(id = "num.layer2", lower = 8L, upper = 16L),
-  makeDiscreteParam(id = "act1", c("tanh", "relu", "sigmoid")),
-  makeDiscreteParam(id = "act2", c("tanh", "relu", "sigmoid")))
+  makeLogicalParam(id = "dropout.global"),
+  makeNumericParam(id = "dropout.input", lower = 0.2, upper = 0.8),
+  makeLogicalParam(id = "batch.normalization"))
 
 # sample fun 
 sample.fun = function(par.set, n.configs, bracket.storage) {
@@ -62,7 +61,7 @@ sample.fun = function(par.set, n.configs, bracket.storage) {
     ctrl = setMBOControlInfill(ctrl, crit = crit.cb)
     designMBO = data.table(bracket.storage)
     designMBO = data.frame(designMBO[, mean(y), by = names(configSpace$pars)])
-    colnames(designMBO) = colnames(bracket.storage)[-8]
+    colnames(designMBO) = colnames(bracket.storage)[-6]
     opt.state = initSMBO(
       par.set = configSpace, 
       design = designMBO,
@@ -79,7 +78,9 @@ sample.fun = function(par.set, n.configs, bracket.storage) {
 
 # init fun
 init.fun = function(r, config) {
-  lrn = makeLearner("classif.mxff", begin.round = 1, num.round = r, par.vals = config)
+  lrn = makeLearner("classif.mxff", 
+          layers = 2, num.layer1 = 16, num.layer2 = 32,
+          begin.round = 1, num.round = r, par.vals = config)
   mod = train(learner = lrn, task = problem, subset = train.set)
   return(mod)
 }

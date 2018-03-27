@@ -44,13 +44,11 @@ print(problem)
 
 # config space
 configSpace = makeParamSet(
-  makeNumericParam(id = "learning.rate", lower = 0.01, upper = 0.5),
-  makeNumericParam(id = "momentum", lower = 0.1, upper = 0.99),
-  makeIntegerParam(id = "layers", lower = 1L, upper = 2L),
-  makeIntegerParam(id = "num.layer1", lower = 4L, upper = 8L),
-  makeIntegerParam(id = "num.layer2", lower = 8L, upper = 16L),
-  makeDiscreteParam(id = "act1", c("tanh", "relu", "sigmoid")),
-  makeDiscreteParam(id = "act2", c("tanh", "relu", "sigmoid")))
+  makeNumericParam(id = "learning.rate", lower = 0.001, upper = 0.1),
+  makeNumericParam(id = "momentum", lower = 0.5, upper = 0.99),
+  makeLogicalParam(id = "dropout.global"),
+  makeNumericParam(id = "dropout.input", lower = 0.2, upper = 0.8),
+  makeLogicalParam(id = "batch.normalization"))
 
 # sample fun
 sample.fun = function(par.set, n.configs, ...) {
@@ -59,7 +57,9 @@ sample.fun = function(par.set, n.configs, ...) {
 
 # init fun
 init.fun = function(r, config) {
-  lrn = makeLearner("classif.mxff", begin.round = 1, num.round = r, par.vals = config)
+  lrn = makeLearner("classif.mxff", 
+          layers = 2, num.layer1 = 4, num.layer2 = 8,
+          begin.round = 1, num.round = r, par.vals = config)
   mod = train(learner = lrn, task = problem, subset = train.set)
   return(mod)
 }
