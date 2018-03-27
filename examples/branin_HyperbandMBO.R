@@ -104,26 +104,21 @@ hyperhyperMBO = hyperband(
   train.fun = train.fun, 
   performance.fun = performance.fun)
 
-# get performance arbitrary bracket
-lapply(hyperhyperMBO, function(x) x$visPerformances())
+# visualize the brackets and get the best performance of each bracket
+hyperVis(hyperhyperMBO)
 lapply(hyperhyperMBO, function(x) x$getPerformances())
 
-# visualize results of all brackets
-results = data.frame(matrix(nrow = 5, ncol = 2))
-for(i in 1:5) {
-  results[i, 1] = hyperhyperMBO[[i]]$models[[1]]$model[1]
-  for(j in 1:5) {
-    results[j, 2] = hyperhyperMBO[[j]]$models[[1]]$model[2]
-  }
-}
-rownames(results) = c("bracket 1", "bracket 2", "bracket 3", "bracket 4", "bracket 5")
-colnames(results) = c("x1", "x2")
+# visualize the final results of all brackets
+results = lapply(hyperhyperMBO, function(x) x$models[[1]]$model)
+data = data.frame(matrix(unlist(results), ncol = 2, byrow = TRUE))
+rownames(data) = c("bracket 1", "bracket 2", "bracket 3", "bracket 4", "bracket 5")
+colnames(data) = c("x1", "x2")
 
 (vis = vis + 
-  geom_point(data = results, mapping = aes(x = x1, y = x2), shape = 3, size = 3) + 
-  geom_text_repel(data = results,
+  geom_point(data = data, mapping = aes(x = x1, y = x2), shape = 3, size = 3) + 
+  geom_text_repel(data = data,
                   mapping = aes(x = x1, y = x2, color = factor(x1)),
-                  label = rownames(results),
+                  label = rownames(data),
                   max.iter = 10000,
                   force = 3,
                   size = 4,
