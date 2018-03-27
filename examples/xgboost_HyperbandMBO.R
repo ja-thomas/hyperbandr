@@ -98,6 +98,6 @@ hyperhyperMBO = hyperband(
   performance.fun = performance.fun)
 
 # get performance arbitrary bracket
-lapply(hyperhyperMBO, function(x) x$visPerformances())
+hyperVis(hyperhyperMBO)
 lapply(hyperhyperMBO, function(x) x$getPerformances())
 
