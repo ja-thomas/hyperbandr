@@ -11,7 +11,6 @@ library("smoof")
 library("ggplot2")
 library("data.table")
 library("dplyr")
-library("gridExtra")
 library("ggrepel")
 
 
@@ -101,9 +100,10 @@ hyperhyperMBO = hyperband(
   max.perf = FALSE,
   id = "branin_MBO",
   par.set = configSpace, 
-  sample.fun =  sample.fun,
+  sample.fun =  sample.fun.mbo,
   train.fun = train.fun, 
-  performance.fun = performance.fun)
+  performance.fun = performance.fun,
+  aggr.fun = function(x) mean(x))
 
 # visualize the brackets and get the best performance of each bracket
 hyperVis(hyperhyperMBO)

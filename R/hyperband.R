@@ -86,8 +86,8 @@
 #' lapply(hyperhyper, function(x) x$getPerformances())
 
 
-hyperband = function(max.ressources = 81, prop.discard = 3,
-  max.perf = TRUE, id, par.set, sample.fun, train.fun, performance.fun) {
+hyperband = function(problem, max.ressources = 81, prop.discard = 3,
+  max.perf = TRUE, id, par.set, sample.fun, train.fun, performance.fun, ...) {
   # |sMax + 1| are the total number of brackets to try
   sMax =  floor(log(max.ressources, base = prop.discard))
   B = (sMax + 1)*max.ressources
@@ -98,6 +98,7 @@ hyperband = function(max.ressources = 81, prop.discard = 3,
   for(s in sMax:0) {
     catf("Beginning with bracket %s", s)
     brack = bracket$new(
+      problem, 
       max.perf = max.perf,
       max.ressources = max.ressources,
       prop.discard = prop.discard,
@@ -108,7 +109,8 @@ hyperband = function(max.ressources = 81, prop.discard = 3,
       sample.fun = sample.fun,
       train.fun = train.fun,
       performance.fun = performance.fun,
-      bracket.storage = totalStorage$data.matrix
+      bracket.storage = totalStorage$data.matrix,
+      ...
     )
     brack$run()
     bracketWinners[[s + 1]] = brack

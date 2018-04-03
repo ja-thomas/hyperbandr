@@ -16,7 +16,7 @@
 #' @export
 
 
-hyperStorage = R6Class("hyperStorage",
+hyperStorage = R6Class("HyperStorage",
   public = list(
     data.matrix = NULL,
     col.names = NULL,

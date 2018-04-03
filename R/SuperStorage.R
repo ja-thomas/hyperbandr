@@ -21,24 +21,12 @@
 #' @export
 
 
-algorithmStorage = R6Class("AlgorithmStorage",
+superStorage = R6Class("SuperStorage",
   public = list(
-    data.matrix = NULL,
-    col.names = NULL,
-    row.names = NULL,
-    # initialize the algorithmStorage object
-    initialize = function(config, budget, model, performance, problem) {
-      self$data.matrix = data.frame(config, budget, performance(model, problem))
-      self$col.names = c(names(config), "current_budget", "y")
-      self$row.names = 1:length(dim(self$data.matrix)[[1]])
-      colnames(self$data.matrix) = self$col.names
-      rownames(self$data.matrix) = self$row.names
-    },
     # method to rbind a new line to the data.matrix
-    attachLine = function(newline) {
+    attachLines = function(newline) {
       self$data.matrix = rbind(self$data.matrix, newline)
-      rownames(self$data.matrix) = 1:dim(self$data.matrix)[[1]]  
-      #colnames(self$data.matrix) = self$col.names
+      colnames(self$data.matrix) = self$col.names
     }
   )
 )

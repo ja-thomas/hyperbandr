@@ -105,28 +105,30 @@ algorithm = R6Class("Algorithm",
     train.fun = NULL,
     performance.fun = NULL,
     algorithm.result = NULL,
-    initialize = function(id, configuration, initial.budget, init.fun, train.fun, performance.fun) {
+    problem = NULL,
+    initialize = function(problem, id, configuration, initial.budget, init.fun, train.fun, performance.fun) {
+      self$problem = problem
       self$id = id
       self$configuration = configuration
       self$current.budget = initial.budget
-      self$model = init.fun(initial.budget, configuration)
+      self$model = init.fun(initial.budget, configuration, problem)
       self$train.fun = train.fun
       self$performance.fun = performance.fun
       self$algorithm.result = algorithmStorage$new(self$configuration, self$current.budget, 
-        self$model, self$performance.fun)
+        self$model, self$performance.fun, self$problem)
     },
     # method to continue training
     continue = function(budget) {
-      self$model = self$train.fun(self$model, budget)
+      self$model = self$train.fun(self$model, budget, self$problem)
       self$current.budget = self$current.budget + budget
       # append the performance to the algorithm storage
       self$algorithm.result$attachLine(algorithmStorage$new(self$configuration, self$current.budget, 
-        self$model, self$performance.fun)$data.matrix)
+        self$model, self$performance.fun, self$problem)$data.matrix)
       invisible(NULL)
     },
     # method to obtain the current performance
     getPerformance = function() {
-      self$performance.fun(self$model)
+      self$performance.fun(self$model, self$problem)
     },
     # method to visualize the performance
     visPerformance = function() {

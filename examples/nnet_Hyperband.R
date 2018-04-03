@@ -2,6 +2,7 @@
 ############## packages ###############
 #######################################
 
+setwd("C:/Users/Niklas/hyperbandr")
 library("devtools")
 load_all()
 library("mxnet") 
@@ -29,10 +30,14 @@ rm(test)
 
 # Generate train and test split
 train.set = sample(nrow(mnist), size = (2/3)*nrow(mnist))
-test.set = setdiff(1:nrow(mnist), train.set)
+val.set = sample(setdiff(1:nrow(mnist), train.set), 0.5 * (dim(mnist)[[1]] - length(train.set)))
+test.set = setdiff(1:nrow(mnist), c(train.set, val.set))
 
 # mini-mnist has 10 classes
-problem = makeClassifTask(data = mnist, target = "label")
+task = makeClassifTask(data = mnist, target = "label")
+
+# define the problem
+problem = list(data = task, train = train.set, val = val.set, test = test.set)
 
 # each class has 600 samples
 print(problem)
@@ -55,17 +60,17 @@ sample.fun = function(par.set, n.configs, ...) {
   lapply(sampleValues(par = par.set, n = n.configs), function(x) x[!is.na(x)])
 }
 
-# init fun
-init.fun = function(r, config) {
-  lrn = makeLearner("classif.mxff", 
-          layers = 2, num.layer1 = 4, num.layer2 = 8,
+# init fun: medium sized net
+init.fun = function(r, config, problem) {
+  lrn = makeLearner("classif.mxff",
+          layers = 2, num.layer1 = 4, num.layer2 = 8, array.batch.size = 256,
           begin.round = 1, num.round = r, par.vals = config)
-  mod = train(learner = lrn, task = problem, subset = train.set)
+  mod = train(learner = lrn, task = problem$data, subset = problem$train)
   return(mod)
 }
 
 # train fun
-train.fun = function(mod, budget) {
+train.fun = function(mod, budget, problem) {
   lrn = makeLearner("classif.mxff", par.vals = mod$learner$par.vals)
   lrn = setHyperPars(lrn,
     symbol = mod$learner.model$symbol,
@@ -73,13 +78,13 @@ train.fun = function(mod, budget) {
     aux.params = mod$learner.model$aux.params,
     begin.round = mod$learner$par.vals$begin.round + mod$learner$par.vals$num.round,
     num.round = budget)
-  mod = train(learner = lrn, task = problem, subset = train.set)
+  mod = train(learner = lrn, task = problem$data, subset = problem$train)
   return(mod)
 }
 
 # performance fun
-performance.fun = function(model) {
-  pred = predict(model, task = problem, subset = test.set)
+performance.fun = function(model, problem) {
+  pred = predict(model, task = problem$data, subset = problem$val)
   performance(pred, measures = acc)
 }
 
@@ -90,6 +95,7 @@ performance.fun = function(model) {
 
 #### make neural net algorithm object ####
 obj = algorithm$new(
+  problem = problem,
   id = "nnet",
   configuration = sample.fun(par.set = configSpace, n.configs = 1)[[1]],
   initial.budget = 1,
@@ -104,11 +110,11 @@ obj$algorithm.result$data.matrix
 # if we are only interested in the performance, we can also call the getPerformance method
 obj$getPerformance()
 # we can continue training our object for one iteration by calling
-obj$continue(1)
+obj$continue(4)
 # inspect of the data matrix has changed
 obj$algorithm.result$data.matrix
 # continue training for 18 iterations to obtain a total of 20 iterations
-invisible(capture.output(replicate(18, obj$continue(1))))
+invisible(capture.output(replicate(3, obj$continue(5))))
 # inspect model the model again
 obj$model
 # inspect the data matrix again
@@ -118,6 +124,7 @@ obj$visPerformance()
 
 ###### make neural net bracket object #####
 brack = bracket$new(
+  problem = problem,
   max.perf = TRUE,
   max.ressources = 81,
   prop.discard = 3,
@@ -142,6 +149,7 @@ brack$getPerformances()
 
 ########### call hyperband ############ 
 hyperhyper = hyperband(
+  problem = problem, 
   max.ressources = 81, 
   prop.discard = 3,  
   max.perf = TRUE,
@@ -153,5 +161,11 @@ hyperhyper = hyperband(
 
 # visualize the brackets and get the best performance of each bracket
 hyperVis(hyperhyper)
-lapply(hyperhyper, function(x) x$getPerformances())
+max(unlist(lapply(hyperhyper, function(x) x$getPerformances())))
+
+# check the performance of the best bracket on the test set
+best.mod = which.max(unlist(lapply(hyperhyper, function(x) x$getPerformances())))
+test.perf = performance(predict(hyperhyper[[best.mod]]$models[[1]]$model, 
+                                task = problem, subset = test.set), 
+                        measures = acc)
 

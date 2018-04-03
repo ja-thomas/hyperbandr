@@ -126,7 +126,7 @@ bracket = R6Class("Bracket",
     max.perf = NULL,
     bracket.storage = NULL,
     ## initialize the bracket object
-    initialize = function(max.perf, max.ressources, prop.discard, s, B, id, 
+    initialize = function(problem, max.perf, max.ressources, prop.discard, s, B, id, 
         par.set, sample.fun, train.fun, performance.fun, ...) {
       self$max.perf = max.perf
       self$id = id
@@ -139,7 +139,8 @@ bracket = R6Class("Bracket",
       self$configurations = sample.fun(self$par.set, self$n.configs, ...)
       # create the models
       self$models = mapply(function(conf, name) {
-        algorithm$new(id = paste(id, name, sep = "."), 
+        algorithm$new(problem, 
+                      id = paste(id, name, sep = "."), 
                       configuration = conf,
                       initial.budget = self$getBudgetAllocation(),
                       init.fun = init.fun, 

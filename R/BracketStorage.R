@@ -15,7 +15,7 @@
 #' @export
 
 
-bracketStorage = R6Class("bracketStorage",
+bracketStorage = R6Class("BracketStorage",
   public = list(
     data.matrix = NULL,
     # initialize the bracketStorage object as a data fame
@@ -26,7 +26,7 @@ bracketStorage = R6Class("bracketStorage",
     # method to rbind a new line to the
     attachLines = function(newline) {
       self$data.matrix = rbind(self$data.matrix, newline)
-    rownames(self$data.matrix) = 1:dim(self$data.matrix)[[1]]  
+      rownames(self$data.matrix) = 1:dim(self$data.matrix)[[1]]  
     }
   )
 )

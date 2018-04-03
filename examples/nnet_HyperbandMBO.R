@@ -2,13 +2,15 @@
 ############## packages ###############
 #######################################
 
+setwd("C:/Users/Niklas/hyperbandr")
 library("devtools")
 load_all()
 library("mxnet") 
 library("mlr") # you might need to install mxnet branch of mlr: devtools::install_github("mlr-org/mlr", ref = "mxnet")
 library("mlrMBO")
-library("randomForest") # for MBO
 library("ggplot2")
+library("gridExtra")
+library("dplyr")
 library("data.table")
 
 
@@ -29,13 +31,15 @@ rm(test)
 
 # Generate train and test split
 train.set = sample(nrow(mnist), size = (2/3)*nrow(mnist))
-test.set = setdiff(1:nrow(mnist), train.set)
+val.set = sample(setdiff(1:nrow(mnist), train.set), 0.5 * (dim(mnist)[[1]] - length(train.set)))
+test.set = setdiff(1:nrow(mnist), c(train.set, val.set))
 
 # mini-mnist has 10 classes
 problem = makeClassifTask(data = mnist, target = "label")
 
 # each class has 600 samples
 print(problem)
+
 
 #######################################
 ## define functions to use hyperband ##
@@ -50,7 +54,7 @@ configSpace = makeParamSet(
   makeLogicalParam(id = "batch.normalization"))
 
 # sample fun 
-sample.fun = function(par.set, n.configs, bracket.storage) {
+sample.fun.mbo = function(par.set, n.configs, bracket.storage) {
   # sample from configSpace
   if (dim(bracket.storage)[[1]] == 0) {
     lapply(sampleValues(par = par.set, n = n.configs), function(x) x[!is.na(x)])
@@ -100,7 +104,7 @@ train.fun = function(mod, budget) {
 
 # performance fun
 performance.fun = function(model) {
-  pred = predict(model, task = problem, subset = test.set)
+  pred = predict(model, task = problem, subset = val.set)
   performance(pred, measures = acc)
 }
 
@@ -115,11 +119,19 @@ hyperhyperMBO = hyperband(
   max.perf = TRUE,
   id = "nnet", 
   par.set = configSpace, 
-  sample.fun =  sample.fun,
+  #aggr.fun = mean,
+  sample.fun =  sample.fun.mbo,
   train.fun = train.fun, 
   performance.fun = performance.fun)
 
 # visualize the brackets and get the best performance of each bracket
 hyperVis(hyperhyperMBO)
-lapply(hyperhyperMBO, function(x) x$getPerformances())
+max(unlist(lapply(hyperhyperMBO, function(x) x$getPerformances())))
+
+# check the performance of the best bracket on the test set
+best.mod = which.max(unlist(lapply(hyperhyperMBO, function(x) x$getPerformances())))
+test.perf = performance(predict(hyperhyperMBO[[best.mod]]$models[[1]]$model, 
+                                task = problem, subset = test.set), 
+                        measures = acc)
+
 
