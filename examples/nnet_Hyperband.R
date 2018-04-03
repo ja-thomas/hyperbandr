@@ -60,11 +60,20 @@ sample.fun = function(par.set, n.configs, ...) {
   lapply(sampleValues(par = par.set, n = n.configs), function(x) x[!is.na(x)])
 }
 
-# init fun: medium sized net
+# init fun
 init.fun = function(r, config, problem) {
   lrn = makeLearner("classif.mxff",
-          layers = 2, num.layer1 = 4, num.layer2 = 8, array.batch.size = 256,
-          begin.round = 1, num.round = r, par.vals = config)
+    # LeNet architecture: http://deeplearning.net/tutorial/lenet.html 
+    layers = 3, 
+    conv.layer1 = TRUE, conv.layer2 = TRUE,
+    conv.data.shape = c(28, 28),
+    num.layer1 = 16, num.layer2 = 32, num.layer3 = 64,
+    conv.kernel1 = c(3,3), conv.stride1 = c(1,1), pool.kernel1 = c(2,2), pool.stride1 = c(2,2),
+    conv.kernel2 = c(3,3), conv.stride2 = c(1,1), pool.kernel2 = c(2,2), pool.stride2 = c(2,2),           
+    array.batch.size = 512,
+    begin.round = 1, num.round = r, 
+    ctx = mx_device,
+    par.vals = config)
   mod = train(learner = lrn, task = problem$data, subset = problem$train)
   return(mod)
 }
@@ -77,7 +86,8 @@ train.fun = function(mod, budget, problem) {
     arg.params = mod$learner.model$arg.params,
     aux.params = mod$learner.model$aux.params,
     begin.round = mod$learner$par.vals$begin.round + mod$learner$par.vals$num.round,
-    num.round = budget)
+    num.round = budget,
+    ctx = mx_device)
   mod = train(learner = lrn, task = problem$data, subset = problem$train)
   return(mod)
 }
@@ -147,7 +157,46 @@ brack$visPerformances()
 # access the performance of the best model
 brack$getPerformances()
 
-########### call hyperband ############ 
+########### call hyperband gpu ############
+mx_device = mx.gpu()
+
+t1 = Sys.time()
+hyperhyper = hyperband(
+  problem = problem, 
+  max.ressources = 50, 
+  prop.discard = 3,  
+  max.perf = TRUE,
+  id = "nnet", 
+  par.set = configSpace, 
+  sample.fun =  sample.fun,
+  train.fun = train.fun, 
+  performance.fun = performance.fun)
+t2 = Sys.time()
+time_gpu = t2 - t1
+time_gpu
+
+########### call hyperband gpu 2 ##########
+mx_device = mx.gpu()
+
+t1 = Sys.time()
+hyperhyper = hyperband(
+  problem = problem, 
+  max.ressources = 1000, 
+  prop.discard = 3,  
+  max.perf = TRUE,
+  id = "nnet", 
+  par.set = configSpace, 
+  sample.fun =  sample.fun,
+  train.fun = train.fun, 
+  performance.fun = performance.fun)
+t2 = Sys.time()
+time_gpu2 = t2 - t1
+time_gpu2
+
+########### call hyperband cpu ############
+mx_device = mx.cpu()
+t1 = Sys.time()
+
 hyperhyper = hyperband(
   problem = problem, 
   max.ressources = 81, 
@@ -158,6 +207,9 @@ hyperhyper = hyperband(
   sample.fun =  sample.fun,
   train.fun = train.fun, 
   performance.fun = performance.fun)
+t2 = Sys.time()
+time_cpu = t2 - t1
+time_cpu
 
 # visualize the brackets and get the best performance of each bracket
 hyperVis(hyperhyper)
