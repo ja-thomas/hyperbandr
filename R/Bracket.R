@@ -125,6 +125,7 @@ bracket = R6Class("Bracket",
     iteration = 0,
     max.perf = NULL,
     bracket.storage = NULL,
+    adjust = NULL,
     ## initialize the bracket object
     initialize = function(problem, max.perf, max.ressources, prop.discard, s, B, id, 
         par.set, sample.fun, train.fun, performance.fun, ...) {
@@ -176,9 +177,10 @@ bracket = R6Class("Bracket",
     },
     ## method to compute one step of successive halving
     step = function() {
+      self$adjust = self$getBudgetAllocation()
       self$iteration = self$iteration + 1
       self$filterTopKModels(self$getNumberOfModelsToSelect())
-      lapply(self$models, function(x) x$continue(self$getBudgetAllocation()))
+      lapply(self$models, function(x) x$continue(self$getBudgetAllocation() - self$adjust))
       # attach model results to the bracket.storage
       self$bracket.storage$attachLines(bracketStorage$new(self$models)$data.matrix)
       invisible(NULL)

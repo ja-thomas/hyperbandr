@@ -22,6 +22,10 @@ data(agaricus.test)
 dtrain = xgb.DMatrix(agaricus.train$data, label = agaricus.train$label)
 dtest = xgb.DMatrix(agaricus.test$data, label = agaricus.test$label)
 
+problem = list(train = dtrain, val = dtest)
+rm(dtrain)
+rm(dtest) 
+
  
 #######################################
 ## define functions for hyperbandMBO ##
@@ -60,24 +64,22 @@ sample.fun = function(par.set, n.configs, bracket.storage) {
 }
 
 # init fun 
-init.fun = function(r, config, ...) {
-  # watchlist for lazy performance evaluation (ha-ha)
-  watchlist = list(eval = dtest, train = dtrain)
-  # compute the actual xgboost model
-  capture.output({mod = xgb.train(config, dtrain, nrounds = r, watchlist, verbose = 1)})
+init.fun = function(r, config, problem) {
+  watchlist = list(eval = problem$val, train = problem$train)
+  capture.output({mod = xgb.train(config, problem$train, nrounds = r, watchlist, verbose = 1)})
   return(mod)
 }
 
 # train fun
-train.fun = function(mod, budget, ...) {
-  watchlist = list(eval = dtest, train = dtrain)
+train.fun = function(mod, budget, problem) {
+  watchlist = list(eval = problem$val, train = problem$train)
   capture.output({mod = xgb.train(xgb_model = mod, 
-    nrounds = budget, params = mod$params, dtrain, watchlist, verbose = 1)})
+    nrounds = budget, params = mod$params, problem$train, watchlist, verbose = 1)})
   return(mod)
 }
 
 # performance fun
-performance.fun = function(model, ...) {
+performance.fun = function(model, problem) {
   tail(model$evaluation_log$eval_rmse, n = 1)
 }
 
@@ -88,6 +90,7 @@ performance.fun = function(model, ...) {
 
 ########### call hyperband ############ 
 hyperhyperMBO = hyperband(
+  problem = problem,
   max.ressources = 81, 
   prop.discard = 3,  
   max.perf = FALSE,

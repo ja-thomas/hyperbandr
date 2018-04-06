@@ -49,11 +49,16 @@ print(problem)
 
 # config space
 configSpace = makeParamSet(
+  makeDiscreteParam(id = "optimizer", values = c("sgd", "rmsprop", "adam", "adagrad")),
   makeNumericParam(id = "learning.rate", lower = 0.001, upper = 0.1),
-  makeNumericParam(id = "momentum", lower = 0.5, upper = 0.99),
-  makeLogicalParam(id = "dropout.global"),
-  makeNumericParam(id = "dropout.input", lower = 0.2, upper = 0.8),
-  makeLogicalParam(id = "batch.normalization"))
+  makeNumericParam(id = "wd", lower = 0, upper = 0.01),
+  makeNumericParam(id = "dropout.input", lower = 0, upper = 0.6),
+  makeNumericParam(id = "dropout.layer1", lower = 0, upper = 0.6),
+  makeNumericParam(id = "dropout.layer2", lower = 0, upper = 0.6),
+  makeNumericParam(id = "dropout.layer3", lower = 0, upper = 0.6),
+  makeLogicalParam(id = "batch.normalization1"),
+  makeLogicalParam(id = "batch.normalization2"),
+  makeLogicalParam(id = "batch.normalization3"))
 
 # sample fun
 sample.fun = function(par.set, n.configs, ...) {
@@ -67,12 +72,12 @@ init.fun = function(r, config, problem) {
     layers = 3, 
     conv.layer1 = TRUE, conv.layer2 = TRUE,
     conv.data.shape = c(28, 28),
-    num.layer1 = 16, num.layer2 = 32, num.layer3 = 64,
+    num.layer1 = 8, num.layer2 = 16, num.layer3 = 120,
     conv.kernel1 = c(3,3), conv.stride1 = c(1,1), pool.kernel1 = c(2,2), pool.stride1 = c(2,2),
     conv.kernel2 = c(3,3), conv.stride2 = c(1,1), pool.kernel2 = c(2,2), pool.stride2 = c(2,2),           
-    array.batch.size = 512,
+    array.batch.size = 200,
     begin.round = 1, num.round = r, 
-    ctx = mx_device,
+    ctx = mx.gpu(),
     par.vals = config)
   mod = train(learner = lrn, task = problem$data, subset = problem$train)
   return(mod)
@@ -87,7 +92,7 @@ train.fun = function(mod, budget, problem) {
     aux.params = mod$learner.model$aux.params,
     begin.round = mod$learner$par.vals$begin.round + mod$learner$par.vals$num.round,
     num.round = budget,
-    ctx = mx_device)
+    ctx = mx.gpu())
   mod = train(learner = lrn, task = problem$data, subset = problem$train)
   return(mod)
 }
@@ -157,46 +162,9 @@ brack$visPerformances()
 # access the performance of the best model
 brack$getPerformances()
 
-########### call hyperband gpu ############
-mx_device = mx.gpu()
+########### call hyperband ################
 
 t1 = Sys.time()
-hyperhyper = hyperband(
-  problem = problem, 
-  max.ressources = 50, 
-  prop.discard = 3,  
-  max.perf = TRUE,
-  id = "nnet", 
-  par.set = configSpace, 
-  sample.fun =  sample.fun,
-  train.fun = train.fun, 
-  performance.fun = performance.fun)
-t2 = Sys.time()
-time_gpu = t2 - t1
-time_gpu
-
-########### call hyperband gpu 2 ##########
-mx_device = mx.gpu()
-
-t1 = Sys.time()
-hyperhyper = hyperband(
-  problem = problem, 
-  max.ressources = 1000, 
-  prop.discard = 3,  
-  max.perf = TRUE,
-  id = "nnet", 
-  par.set = configSpace, 
-  sample.fun =  sample.fun,
-  train.fun = train.fun, 
-  performance.fun = performance.fun)
-t2 = Sys.time()
-time_gpu2 = t2 - t1
-time_gpu2
-
-########### call hyperband cpu ############
-mx_device = mx.cpu()
-t1 = Sys.time()
-
 hyperhyper = hyperband(
   problem = problem, 
   max.ressources = 81, 
@@ -208,16 +176,20 @@ hyperhyper = hyperband(
   train.fun = train.fun, 
   performance.fun = performance.fun)
 t2 = Sys.time()
-time_cpu = t2 - t1
-time_cpu
+time_gpu = t2 - t1
+time_gpu
 
-# visualize the brackets and get the best performance of each bracket
+# visualize the brackets
 hyperVis(hyperhyper)
+# get the best performance of each bracket
 max(unlist(lapply(hyperhyper, function(x) x$getPerformances())))
+# get the architecture of the best bracket
+best.mod = which.max(unlist(lapply(hyperhyper, function(x) x$getPerformances())))
+hyperhyper[[best.mod]]$models[[1]]$model
 
 # check the performance of the best bracket on the test set
-best.mod = which.max(unlist(lapply(hyperhyper, function(x) x$getPerformances())))
-test.perf = performance(predict(hyperhyper[[best.mod]]$models[[1]]$model, 
-                                task = problem, subset = test.set), 
-                        measures = acc)
+performance(predict(object = hyperhyper[[best.mod]]$models[[1]]$model, 
+                    task = problem$data, 
+                    subset = problem$test), 
+            measures = acc)
 

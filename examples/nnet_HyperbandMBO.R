@@ -35,7 +35,10 @@ val.set = sample(setdiff(1:nrow(mnist), train.set), 0.5 * (dim(mnist)[[1]] - len
 test.set = setdiff(1:nrow(mnist), c(train.set, val.set))
 
 # mini-mnist has 10 classes
-problem = makeClassifTask(data = mnist, target = "label")
+task = makeClassifTask(data = mnist, target = "label")
+
+# define the problem
+problem = list(data = task, train = train.set, val = val.set, test = test.set)
 
 # each class has 600 samples
 print(problem)
@@ -47,11 +50,16 @@ print(problem)
 
 # config space
 configSpace = makeParamSet(
-  makeNumericParam(id = "learning.rate", lower = 0.01, upper = 0.5),
-  makeNumericParam(id = "momentum", lower = 0.1, upper = 0.99),
-  makeLogicalParam(id = "dropout.global"),
-  makeNumericParam(id = "dropout.input", lower = 0.2, upper = 0.8),
-  makeLogicalParam(id = "batch.normalization"))
+  makeDiscreteParam(id = "optimizer", values = c("sgd", "rmsprop", "adam", "adagrad")),
+  makeNumericParam(id = "learning.rate", lower = 0.001, upper = 0.1),
+  makeNumericParam(id = "wd", lower = 0, upper = 0.01),
+  makeNumericParam(id = "dropout.input", lower = 0, upper = 0.6),
+  makeNumericParam(id = "dropout.layer1", lower = 0, upper = 0.6),
+  makeNumericParam(id = "dropout.layer2", lower = 0, upper = 0.6),
+  makeNumericParam(id = "dropout.layer3", lower = 0, upper = 0.6),
+  makeLogicalParam(id = "batch.normalization1"),
+  makeLogicalParam(id = "batch.normalization2"),
+  makeLogicalParam(id = "batch.normalization3"))
 
 # sample fun 
 sample.fun.mbo = function(par.set, n.configs, bracket.storage) {
@@ -64,8 +72,8 @@ sample.fun.mbo = function(par.set, n.configs, bracket.storage) {
     ctrl = makeMBOControl(propose.points = n.configs)
     ctrl = setMBOControlInfill(ctrl, crit = crit.cb)
     designMBO = data.table(bracket.storage)
-    designMBO = data.frame(designMBO[, mean(y), by = names(configSpace$pars)])
-    colnames(designMBO) = colnames(bracket.storage)[-6]
+    designMBO = data.frame(designMBO[, max(y), by = names(configSpace$pars)])
+    colnames(designMBO) = colnames(bracket.storage)[-(length(configSpace$pars) + 1)]
     opt.state = initSMBO(
       par.set = configSpace, 
       design = designMBO,
@@ -81,57 +89,76 @@ sample.fun.mbo = function(par.set, n.configs, bracket.storage) {
 }
 
 # init fun
-init.fun = function(r, config) {
-  lrn = makeLearner("classif.mxff", 
-          layers = 2, num.layer1 = 16, num.layer2 = 32,
-          begin.round = 1, num.round = r, par.vals = config)
-  mod = train(learner = lrn, task = problem, subset = train.set)
+init.fun = function(r, config, problem) {
+  lrn = makeLearner("classif.mxff",
+    # LeNet architecture: http://deeplearning.net/tutorial/lenet.html 
+    layers = 3, 
+    conv.layer1 = TRUE, conv.layer2 = TRUE,
+    conv.data.shape = c(28, 28),
+    num.layer1 = 8, num.layer2 = 16, num.layer3 = 120,
+    conv.kernel1 = c(3,3), conv.stride1 = c(1,1), pool.kernel1 = c(2,2), pool.stride1 = c(2,2),
+    conv.kernel2 = c(3,3), conv.stride2 = c(1,1), pool.kernel2 = c(2,2), pool.stride2 = c(2,2),           
+    array.batch.size = 200,
+    begin.round = 1, num.round = r, 
+    ctx = mx.gpu(),
+    par.vals = config)
+  mod = train(learner = lrn, task = problem$data, subset = problem$train)
   return(mod)
 }
 
 # train fun
-train.fun = function(mod, budget) {
+train.fun = function(mod, budget, problem) {
   lrn = makeLearner("classif.mxff", par.vals = mod$learner$par.vals)
   lrn = setHyperPars(lrn,
     symbol = mod$learner.model$symbol,
     arg.params = mod$learner.model$arg.params,
     aux.params = mod$learner.model$aux.params,
     begin.round = mod$learner$par.vals$begin.round + mod$learner$par.vals$num.round,
-    num.round = budget)
-  mod = train(learner = lrn, task = problem, subset = train.set)
+    num.round = budget,
+    ctx = mx.gpu())
+  mod = train(learner = lrn, task = problem$data, subset = problem$train)
   return(mod)
 }
 
 # performance fun
-performance.fun = function(model) {
-  pred = predict(model, task = problem, subset = val.set)
+performance.fun = function(model, problem) {
+  pred = predict(model, task = problem$data, subset = problem$val)
   performance(pred, measures = acc)
 }
+
 
 #######################################
 ############# applications ############
 #######################################
 
-########### call hyperband ############ 
+########### call hyperband ################
+
+t1 = Sys.time()
 hyperhyperMBO = hyperband(
+  problem = problem, 
   max.ressources = 81, 
   prop.discard = 3,  
   max.perf = TRUE,
   id = "nnet", 
   par.set = configSpace, 
-  #aggr.fun = mean,
   sample.fun =  sample.fun.mbo,
   train.fun = train.fun, 
   performance.fun = performance.fun)
+t2 = Sys.time()
+time_gpu = t2 - t1
+time_gpu
 
-# visualize the brackets and get the best performance of each bracket
+# visualize the brackets
 hyperVis(hyperhyperMBO)
+# get the best performance of each bracket
 max(unlist(lapply(hyperhyperMBO, function(x) x$getPerformances())))
+# get the architecture of the best bracket
+best.mod = which.max(unlist(lapply(hyperhyperMBO, function(x) x$getPerformances())))
+hyperhyperMBO[[best.mod]]$models[[1]]$model
 
 # check the performance of the best bracket on the test set
-best.mod = which.max(unlist(lapply(hyperhyperMBO, function(x) x$getPerformances())))
-test.perf = performance(predict(hyperhyperMBO[[best.mod]]$models[[1]]$model, 
-                                task = problem, subset = test.set), 
-                        measures = acc)
-
+performance(predict(object = hyperhyperMBO[[best.mod]]$models[[1]]$model, 
+                    task = problem$data, 
+                    subset = problem$test), 
+            measures = acc)
 

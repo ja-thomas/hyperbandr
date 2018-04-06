@@ -20,15 +20,15 @@ library("ggrepel")
 ####################################
 
 # we choose the 2 dimensional branin function 
-problem = makeBraninFunction()
+braninProb = makeBraninFunction()
 
 # the branin function has 3 global minima
-opt = data.table(x1 = getGlobalOptimum(problem)$param$x1, x2 = getGlobalOptimum(problem)$param$x2)
-(vis = autoplot(problem) + geom_point(data = opt, aes(x = x1, y = x2), shape = 20, colour = "red", size = 5))
-print(problem)
+opt = data.table(x1 = getGlobalOptimum(braninProb)$param$x1, x2 = getGlobalOptimum(braninProb)$param$x2)
+(vis = autoplot(braninProb) + geom_point(data = opt, aes(x = x1, y = x2), shape = 20, colour = "red", size = 5))
+print(braninProb)
 
 # smoof functions contain a param.set describing types and bounds of the function parameters
-(param.set = getParamSet(problem))
+(param.set = getParamSet(braninProb))
 
 
 #######################################
@@ -67,7 +67,7 @@ sample.fun = function(par.set, n.configs, bracket.storage) {
 }
 
 # init fun
-init.fun = function(r, config) {
+init.fun = function(r, config, problem) {
   x1 = unname(unlist(config))
   x2 = runif(1, 0, 15)
   mod = c(x1, x2)
@@ -75,7 +75,7 @@ init.fun = function(r, config) {
 }
 
 # train fun
-train.fun = function(mod, budget) {
+train.fun = function(mod, budget, problem) {
   for(i in seq_len(budget)) {
     mod.new = c(mod[[1]], mod[[2]] + rnorm(1, sd = 3))
     if(performance.fun(mod.new) < performance.fun(mod))
@@ -85,8 +85,8 @@ train.fun = function(mod, budget) {
 }
 
 # performance fun
-performance.fun = function(model) {
-  problem(c(model[[1]], model[[2]]))
+performance.fun = function(model, problem) {
+  braninProb(c(model[[1]], model[[2]]))
 }
 
 
@@ -96,6 +96,7 @@ performance.fun = function(model) {
 
 ########### call hyperband ############ 
 hyperhyperMBO = hyperband(
+  problem = braninProb,
   max.ressources = 81, 
   prop.discard = 3,  
   max.perf = FALSE,
