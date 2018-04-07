@@ -17,12 +17,12 @@ library("dplyr")
 
 data(agaricus.train)
 data(agaricus.test)
-dtrain = xgb.DMatrix(agaricus.train$data, label = agaricus.train$label)
-dtest = xgb.DMatrix(agaricus.test$data, label = agaricus.test$label)
+train.set = xgb.DMatrix(agaricus.train$data, label = agaricus.train$label)
+test.set = xgb.DMatrix(agaricus.test$data, label = agaricus.test$label)
 
-problem = list(train = dtrain, val = dtest)
-rm(dtrain)
-rm(dtest) 
+problem = list(train = train.set, val = test.set)
+rm(train.set)
+rm(test.set) 
 
 #######################################
 ## define functions to use hyperband ##
@@ -30,9 +30,13 @@ rm(dtest)
 
 # config space
 configSpace = makeParamSet(
-  makeIntegerParam("max_depth", lower = 3, upper = 15, default = 3),
-  makeNumericParam("colsample_bytree", lower = 0.3, upper = 1, default = 0.6),
-  makeNumericParam("subsample", lower = 0.3, upper = 1, default = 0.6))
+  makeDiscreteParam(id = "booster", values = c("gbtree", "gblinear", "dart")),
+  makeNumericParam(id = "eta", lower = 0.001, upper = 0.5),
+  makeNumericParam(id = "gamma", lower = 0.001, upper = 1),
+  makeIntegerParam("max_depth", lower = 1, upper = 20),
+  makeNumericParam("subsample", lower = 0.5, upper = 1),
+  makeNumericParam("colsample_bytree", lower = 0.1, upper = 1)
+)
 
 # sample fun
 sample.fun = function(par.set, n.configs, ...) {

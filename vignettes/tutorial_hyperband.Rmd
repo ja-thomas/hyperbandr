@@ -1,6 +1,6 @@
 ---
 title: "hyperbandr tutorial"
-author: "Niklas"
+author: "by Niklas"
 output: 
   pdf_document: 
     keep_tex: yes
@@ -21,15 +21,104 @@ R6 is an encapsulated object oriented system akin to those in Java or C++, where
 
 Essentially, that means that we obtain a very generic implementation, which is working with every other R package (as long the algorithm meets the requirements of hyperband).
 
-## This tutorial consists of four examples:
+### This tutorial contains a general introduction, four examples and a small guide to [mlr](https://github.com/mlr-org/mlr):
 
-* hyperband to optimize a **neural network** with [mxnet](https://github.com/apache/incubator-mxnet/tree/master/R-package) and [mlr](https://github.com/mlr-org/mlr)
-* hyperband in combination with MBO to optimize a **neural network with [mxnet](https://github.com/apache/incubator-mxnet/tree/master/R-package), [mlr](https://github.com/mlr-org/mlr) and [mlrMBO](https://github.com/mlr-org/mlrMBO)
-* hyperband to optimize a **gradient boosting** model with [xgboost](https://github.com/dmlc/xgboost/tree/master/R-package) and [mlr](https://github.com/mlr-org/mlr)
-* hyperband to optimize a **function** with [smoof](https://github.com/jakobbossek/smoof)
+1. General introduction of the mechanics of the **hyperbandr** package
+2. Example 1: hyperband to optimize a **neural network** with [mxnet](https://github.com/apache/incubator-mxnet/tree/master/R-package) and [mlr](https://github.com/mlr-org/mlr)
+3. Example 2: hyperband in combination with MBO to optimize a **neural network with [mxnet](https://github.com/apache/incubator-mxnet/tree/master/R-package), [mlr](https://github.com/mlr-org/mlr) and [mlrMBO](https://github.com/mlr-org/mlrMBO)
+4. Example 3: hyperband to optimize a **gradient boosting** model with [xgboost](https://github.com/dmlc/xgboost/tree/master/R-package) and [mlr](https://github.com/mlr-org/mlr)
+5. Example 4: hyperband to optimize a **function** with [smoof](https://github.com/jakobbossek/smoof)
+6. appendix: introduction to [mlr](https://github.com/mlr-org/mlr)
 
 \newpage
-## Example 1: hyperband to optimize a **neural network** with [mxnet](https://github.com/apache/incubator-mxnet/tree/master/R-package) and [mlr](https://github.com/mlr-org/mlr)
+## 1. General introduction
+
+In order to call **hyperband**, we need to define five things:
+
+1. a hyperparameter search space
+2. a function to sample configurations
+3. a function to initialize models
+4. a function to train models
+5. a function to evaluate the performance of a model
+
+### 1: the hyperparameter search space
+
+```{r, echo = TRUE, eval = FALSE}
+mySearchSpace = ...
+```
+
+### 2: the sampling function
+
+```{r, echo = TRUE, eval = FALSE}
+sample.fun = function(par.set, n.configs, ...) {
+  ...
+}
+```
+
+The sampling function must return a list of named lists, containing the hyperparameter configurations. Consequently, the latter ones structure should look like this:
+
+```{r, echo = FALSE}
+library("ParamHelpers")
+
+mySearchSpace = makeParamSet(
+  makeDiscreteParam(id = "optimizer", values = c("sgd", "adam")),
+  makeNumericParam(id = "learning.rate", lower = 0.001, upper = 0.1),
+  makeLogicalParam(id = "batch.normalization")
+)
+
+sample.fun = function(par.set, n.configs, ...) {
+  lapply(sampleValues(par = par.set, n = n.configs), function(x) x[!is.na(x)])
+}
+
+set.seed(6)
+
+str(sample.fun(par.set = mySearchSpace, n.configs = 2))
+```
+
+### 3: the initialization function
+
+```{r, echo = TRUE, eval = FALSE}
+init.fun = function(r, config, problem) {
+  ... 
+}
+```
+
+### 4: the training function
+
+```{r, echo = TRUE, eval = FALSE}
+train.fun = function(mod, budget, problem) {
+  ... 
+}
+```
+
+### 5: the performance function
+
+```{r, echo = TRUE, eval = FALSE}
+performance.fun = function(model, problem) {
+  ... 
+}
+```
+
+
+
+```{r, echo = TRUE, eval = FALSE}
+hyperhyper = hyperband(
+  problem = problem,
+  # these are the actual hyperband parameters
+  max.ressources = 81, 
+  prop.discard = 3,
+  # since we chose accuracy, we want to maximize the performance
+  max.perf = TRUE,
+  id = "nnet", 
+  par.set = configSpace, 
+  sample.fun =  sample.fun,
+  train.fun = train.fun, 
+  performance.fun = performance.fun)
+```
+
+
+\newpage
+## 2. Example 1: hyperband to optimize a **neural network** with [mxnet](https://github.com/apache/incubator-mxnet/tree/master/R-package) and [mlr](https://github.com/mlr-org/mlr)
 
 ```{r, echo = FALSE, warning = FALSE, message = FALSE}
 #######################################
@@ -58,12 +147,30 @@ test = fread("../mnist/test.csv", header = TRUE)
 mnist = as.data.frame(rbind(train, test))
 mnist = mnist[sample(nrow(mnist)), ]
 mnist[, 2:785] = lapply(mnist[, 2:785], function(x) x/255)
-rm(train)
-rm(test)
+
+train.x = train[, -1]
+train.x = t(train.x/255)
 ```
 
 We would like to use a subset of the original MNIST data (LeCun & Cortes 2010) and tune a 
 neural network with hyperbandr.
+
+```{r, echo = FALSE}
+plots = 64
+visualize_this = sample(dim(train.x)[2], plots)
+par(mfrow = c(8, plots/8), cex = 0.05)
+
+for(i in 1:plots){
+  train_vis = train.x[1:784, visualize_this[i]]
+  train_mat = matrix(train_vis, nrow = 28, ncol = 28, byrow = TRUE)
+  train_mat = apply(train_mat, 2 , rev)
+  image(t(train_mat), axes = FALSE, col = grey(seq(from = 0, to = 1, length = 255)))
+}
+
+rm(train)
+rm(train.x)
+rm(test)
+```
 
 The data has 6000 observations, evenly distributed on 10 classes.
 
@@ -96,21 +203,12 @@ problem = list(data = task, train = train.set, val = val.set, test = test.set)
 rm(mnist)
 ```
 
-## Setup
-
-In order to call **hyperband** , we need to define five things:
-
-* a search space to sample from
-* a function to sample configurations 
-* a function to initialize models
-* a function to train the model 
-* and a function to evaluate the models performance
-
 ### 1: the configuration space
 
 The ParamHelpers package provides an easy way to construct the configuration space
 
 ```{r, echo = TRUE, comment = NA}
+library("ParamHelpers")
 configSpace = makeParamSet(
   makeDiscreteParam(id = "optimizer", values = c("sgd", "rmsprop", "adam", "adagrad")),
   makeNumericParam(id = "learning.rate", lower = 0.001, upper = 0.1),
@@ -224,8 +322,66 @@ hyperhyper = hyperband(
 ```
 
 
+\newpage
+## 3. Example 2: hyperband in combination with MBO to optimize a **neural network** with [mxnet](https://github.com/apache/incubator-mxnet/tree/master/R-package), [mlr](https://github.com/mlr-org/mlr) and [mlrMBO](https://github.com/mlr-org/mlrMBO)
+
+
+
+```{r, echo = TRUE, warning = FALSE}
+library("mlrMBO")
+library("ranger")
+
+sample.fun.mbo = function(par.set, n.configs, bracket.storage) {
+  # sample from configSpace
+  if (dim(bracket.storage)[[1]] == 0) {
+    lapply(sampleValues(par = par.set, n = n.configs), function(x) x[!is.na(x)])
+  } else {
+  # make MBO from bracket.storage  
+    catf("Proposing points")
+    ctrl = makeMBOControl(propose.points = n.configs)
+    ctrl = setMBOControlInfill(ctrl, crit = crit.cb)
+    designMBO = data.table(bracket.storage)
+    designMBO = data.frame(designMBO[, max(y), by = names(configSpace$pars)])
+    colnames(designMBO) = colnames(bracket.storage)[-(length(configSpace$pars) + 1)]
+    opt.state = initSMBO(
+      par.set = configSpace, 
+      design = designMBO,
+      control = ctrl, 
+      minimize = FALSE, 
+      noisy = FALSE)
+    prop = proposePoints(opt.state)
+    propPoints = prop$prop.points
+    rownames(propPoints) = c()
+    propPoints = convertRowsToList(propPoints, name.list = FALSE, name.vector = TRUE)
+    return(propPoints)
+  }
+}
+```
+
+
 
 ```{r, echo = TRUE}
+hyperhyperMBO = hyperband(
+  problem = problem, 
+  max.ressources = 81, 
+  prop.discard = 3,  
+  max.perf = TRUE,
+  id = "nnet", 
+  par.set = configSpace, 
+  sample.fun =  sample.fun.mbo,
+  train.fun = train.fun, 
+  performance.fun = performance.fun)
+```
+
+
+
+\newpage
+## 4. Example 3: hyperband to optimize a **gradient boosting** model with [xgboost](https://github.com/dmlc/xgboost/tree/master/R-package) and [mlr](https://github.com/mlr-org/mlr)
+
+
+
+```{r, echo = TRUE}
+library("xgboost")
 
 
 ```
@@ -234,8 +390,44 @@ hyperhyper = hyperband(
 
 ```{r, echo = TRUE}
 
+```
+
+
+
+\newpage
+## 5. Example 4: hyperband to optimize a **function** with [smoof](https://github.com/jakobbossek/smoof)
+
+
+
+```{r, echo = TRUE}
 
 ```
+
+
+
+```{r, echo = TRUE}
+
+```
+
+
+
+\newpage
+## 6. appendix: introduction to [mlr](https://github.com/mlr-org/mlr)
+
+
+
+```{r, echo = TRUE}
+
+```
+
+
+
+```{r, echo = TRUE}
+
+```
+
+
+
 
 
 
