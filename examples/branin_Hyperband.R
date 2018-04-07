@@ -127,7 +127,7 @@ brack$getPerformances()
 ########### call hyperband ############ 
 hyperhyper = hyperband(
   problem = braninProb,
-  max.ressources = 500, 
+  max.ressources = 81, 
   prop.discard = 3,  
   max.perf = FALSE,
   id = "branin", 

@@ -30,13 +30,9 @@ rm(test.set)
 
 # config space
 configSpace = makeParamSet(
-  makeDiscreteParam(id = "booster", values = c("gbtree", "gblinear", "dart")),
-  makeNumericParam(id = "eta", lower = 0.001, upper = 0.5),
-  makeNumericParam(id = "gamma", lower = 0.001, upper = 1),
-  makeIntegerParam("max_depth", lower = 1, upper = 20),
-  makeNumericParam("subsample", lower = 0.5, upper = 1),
-  makeNumericParam("colsample_bytree", lower = 0.1, upper = 1)
-)
+  makeIntegerParam("max_depth", lower = 3, upper = 15, default = 3),
+  makeNumericParam("colsample_bytree", lower = 0.3, upper = 1, default = 0.6),
+  makeNumericParam("subsample", lower = 0.3, upper = 1, default = 0.6))
 
 # sample fun
 sample.fun = function(par.set, n.configs, ...) {

@@ -9,6 +9,7 @@ library("mlrMBO")
 library("rgenoud")
 library("xgboost")
 library("ggplot2")
+library("gridExtra")
 library("data.table")
 library("dplyr")
 
@@ -48,7 +49,7 @@ sample.fun = function(par.set, n.configs, bracket.storage) {
     ctrl = setMBOControlInfill(ctrl, crit = crit.cb)
     designMBO = data.table(bracket.storage)
     designMBO = data.frame(designMBO[, mean(y), by = names(configSpace$pars)])
-    colnames(designMBO) = colnames(bracket.storage)[-4]
+    colnames(designMBO) = colnames(bracket.storage)[-(length(configSpace$pars) + 1)]
     opt.state = initSMBO(
       par.set = configSpace, 
       design = designMBO,
@@ -88,7 +89,7 @@ performance.fun = function(model, problem) {
 ############# applications ############
 #######################################
 
-########### call hyperband ############ 
+########### call hyperband ############
 hyperhyperMBO = hyperband(
   problem = problem,
   max.ressources = 81, 
