@@ -1,24 +1,95 @@
+---
+output: github_document
+---
 
-hyperband in R6
-===============
+```{r, echo = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  fig.path = "README-"
+)
+```
 
-### This is a very generic R6 implementation of the hyperband algorithm for hyperparameter optimization (<https://arxiv.org/pdf/1603.06560.pdf>)
+
+```{r, include = FALSE}
+writeLines(capture.output(devtools::session_info()), "session_info.txt")
+```
+
+
+# hyperband in R6 
+
+### This is a very generic R6 implementation of the hyperband algorithm for hyperparameter optimization (https://arxiv.org/pdf/1603.06560.pdf)
 
 ### The project is not yet finished but can already be used on your own problems and should work with any other R package/algorithm as long as it is suitable for hyperband.
 
 ### Check the vignette folder for a very in-depth explanation + four exhaustive examples on how to use the package.
 
-------------------------------------------------------------------------
+
+```{r, echo = FALSE, warning = FALSE, message = FALSE}
+#######################################
+############## packages ###############
+#######################################
+
+library("R6")
+library("devtools")
+load_all()
+library("mxnet")
+library("mlr") # you might need to install mxnet branch of mlr: devtools::install_github("mlr-org/mlr", ref = "mxnet")
+library("ggplot2")
+library("gridExtra")
+library("dplyr")
+library("data.table")
+
+####################################
+## define the problem to optimize ##
+####################################
+
+# read mini_mnist (1/10 of actual mnist for faster evaluation, evenly distributed classes)
+train = fread("mnist/train.csv", header = TRUE)
+test = fread("mnist/test.csv", header = TRUE)
+
+# Some operations to normalize features
+mnist = as.data.frame(rbind(train, test))
+mnist = mnist[sample(nrow(mnist)), ]
+mnist[, 2:785] = lapply(mnist[, 2:785], function(x) x/255)
+
+train.x = train[, -1]
+train.x = t(train.x/255)
+```
+
+----
 
 ### Let us use **hyperbandr** in order to tune the hyperparameters of a neural network on the famous MNIST data (LeCun & Cortes 2010).
 
 To this, we use [mxnet](https://github.com/apache/incubator-mxnet/tree/master/R-package) and [mlr](https://github.com/mlr-org/mlr).
 
-![](images/MNIST.png)
+\vspace{10pt}
+
+```{r, echo = FALSE}
+plots = 64
+visualize_this = sample(dim(train.x)[2], plots)
+par(mfrow = c(8, plots/8), cex = 0.05)
+
+for(i in 1:plots){
+  train_vis = train.x[1:784, visualize_this[i]]
+  train_mat = matrix(train_vis, nrow = 28, ncol = 28, byrow = TRUE)
+  train_mat = apply(train_mat, 2 , rev)
+  image(t(train_mat), axes = FALSE, col = grey(seq(from = 0, to = 1, length = 255)))
+}
+
+rm(train)
+rm(train.x)
+rm(test)
+```
+
+\vspace{10pt}
 
 For convenience, we only use 1/10 of the original data.
 
-``` r
+\vspace{10pt}
+
+```{r, echo = TRUE}
 # We sample 2/3 of our data for training
 train.set = sample(nrow(mnist), size = (2/3)*nrow(mnist))
 
@@ -35,9 +106,14 @@ task = makeClassifTask(data = mnist, target = "label")
 problem = list(data = task, train = train.set, val = val.set, test = test.set)
 ```
 
-At first we define a search space. The ParamHelpers package provides an easy way to construct the latter one.
+\vspace{10pt}
 
-``` r
+At first we define a search space. 
+The ParamHelpers package provides an easy way to construct the latter one.
+
+\vspace{10pt}
+
+```{r, echo = TRUE, comment = NA}
 library("ParamHelpers")
 
 configSpace = makeParamSet(
@@ -54,18 +130,26 @@ configSpace = makeParamSet(
 )
 ```
 
+\vspace{10pt}
+
 Now we need a function to sample configurations from our search space.
 
-``` r
+\vspace{10pt}
+
+```{r, echo = TRUE}
 sample.fun = function(par.set, n.configs, ...) {
   # sample from the par.set and remove all NAs
   lapply(sampleValues(par = par.set, n = n.configs), function(x) x[!is.na(x)])
 }
 ```
 
+\vspace{10pt}
+
 .. as well as a function to initialize models ..
 
-``` r
+\vspace{10pt}
+
+```{r, echo = TRUE}
 init.fun = function(r, config, problem) {
   lrn = makeLearner("classif.mxff",
     # you may have to install mxnet gpu, else just set ctx = mx.cpu()
@@ -91,9 +175,13 @@ init.fun = function(r, config, problem) {
 }
 ```
 
+\vspace{10pt}
+
 .. and a function to continue the training of our model ..
 
-``` r
+\vspace{10pt}
+
+```{r, echo = TRUE}
 train.fun = function(mod, budget, problem) {
   # we create a new learner and assign all parameters from our model
   lrn = makeLearner("classif.mxff", ctx = mx.gpu(), par.vals = mod$learner$par.vals)
@@ -110,9 +198,13 @@ train.fun = function(mod, budget, problem) {
 }
 ```
 
+\vspace{10pt}
+
 .. and last but not least a function to measure the performance of our model at each step of successive halving:
 
-``` r
+\vspace{10pt}
+
+```{r, echo = TRUE}
 performance.fun = function(model, problem) {
   pred = predict(model, task = problem$data, subset = problem$val)
   # we choose accuracy as our performance measure
@@ -120,9 +212,13 @@ performance.fun = function(model, problem) {
 }
 ```
 
+\vspace{10pt}
+
 Now we can call hyperband
 
-``` r
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE}
 hyperhyper = hyperband(
   problem = problem,
   max.ressources = 81, 
@@ -133,133 +229,93 @@ hyperhyper = hyperband(
   sample.fun =  sample.fun,
   train.fun = train.fun, 
   performance.fun = performance.fun)
-#> Beginning with bracket 4
-#> Iteration 0, with 81 Algorithms left (Budget: 1)
-#> Iteration 1, with 27 Algorithms left (Budget: 3)
-#> Iteration 2, with 9 Algorithms left (Budget: 9)
-#> Iteration 3, with 3 Algorithms left (Budget: 27)
-#> Iteration 4, with 1 Algorithms left (Budget: 81)
-#> Beginning with bracket 3
-#> Iteration 0, with 34 Algorithms left (Budget: 3)
-#> Iteration 1, with 11 Algorithms left (Budget: 9)
-#> Iteration 2, with 3 Algorithms left (Budget: 27)
-#> Iteration 3, with 1 Algorithms left (Budget: 81)
-#> Beginning with bracket 2
-#> Iteration 0, with 15 Algorithms left (Budget: 9)
-#> Iteration 1, with 5 Algorithms left (Budget: 27)
-#> Iteration 2, with 1 Algorithms left (Budget: 81)
-#> Beginning with bracket 1
-#> Iteration 0, with 8 Algorithms left (Budget: 27)
-#> Iteration 1, with 1 Algorithms left (Budget: 81)
-#> Beginning with bracket 0
-#> Iteration 0, with 1 Algorithms left (Budget: 81)
 ```
+
+\vspace{10pt}
 
 With max.ressources = 81 and prop.discard = 3, we obtain a total of 5 brackets
 
-``` r
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE}
 length(hyperhyper)
-#> [1] 5
 ```
+
+\vspace{10pt}
 
 We can inspect the first bracket ..
 
-``` r
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE}
 hyperhyper[[1]]
-#> <Bracket>
-#>   Public:
-#>     adjust: 27
-#>     B: 405
-#>     bracket.storage: BracketStorage, R6
-#>     clone: function (deep = FALSE) 
-#>     configurations: list
-#>     filterTopKModels: function (k) 
-#>     getBudgetAllocation: function () 
-#>     getNumberOfModelsToSelect: function () 
-#>     getPerformances: function () 
-#>     getTopKModels: function (k) 
-#>     id: nnet
-#>     initialize: function (problem, max.perf, max.ressources, prop.discard, s, 
-#>     iteration: 4
-#>     max.perf: TRUE
-#>     max.ressources: NULL
-#>     models: list
-#>     n.configs: 1
-#>     par.set: ParamSet
-#>     printState: function () 
-#>     prop.discard: 3
-#>     r.config: 1
-#>     run: function () 
-#>     s: 4
-#>     sample.fun: NULL
-#>     step: function () 
-#>     visPerformances: function (make.labs = TRUE, ...)
 ```
+
+\vspace{10pt}
 
 .. and for instance check it's performance by calling the getPerformance() method
 
-``` r
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE}
 hyperhyper[[1]]$getPerformances()
-#> [1] 0.98
 ```
+
+\vspace{10pt}
 
 We can also inspect the architecture of the best model of bracket 1
 
-``` r
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE}
 hyperhyper[[1]]$models[[1]]$model
-#> Model for learner.id=classif.mxff; learner.class=classif.mxff
-#> Trained on: task.id = mnist; obs = 4000; features = 784
-#> Hyperparameters: learning.rate=0.0553,array.layout=rowmajor,verbose=FALSE,optimizer=adagrad,wd=0.00554,dropout.input=0.104,dropout.layer1=0.351,dropout.layer2=0.353,dropout.layer3=0.362,batch.normalization1=FALSE,batch.normalization2=FALSE,batch.normalization3=TRUE,ctx=<MXContext>,layers=3,conv.layer1=TRUE,conv.layer2=TRUE,conv.data.shape=28,28,num.layer1=8,num.layer2=16,num.layer3=64,conv.kernel1=3,3,conv.stride1=1,1,pool.kernel1=2,2,pool.stride1=2,2,conv.kernel2=3,3,conv.stride2=1,1,pool.kernel2=2,2,pool.stride2=2,2,array.batch.size=128,begin.round=28,num.round=54,symbol=<Rcpp_MXSymbol>,arg.params=<list>,aux.params=<list>
 ```
+
+\vspace{10pt}
 
 Now let's see which bracket yields the best performance
 
-``` r
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE}
 lapply(hyperhyper, function(x) x$getPerformances())
-#> [[1]]
-#> [1] 0.98
-#> 
-#> [[2]]
-#> [1] 0.976
-#> 
-#> [[3]]
-#> [1] 0.965
-#> 
-#> [[4]]
-#> [1] 0.962
-#> 
-#> [[5]]
-#> [1] 0.956
 ```
+
+\vspace{10pt}
 
 We can call the hyperVis function to visualize all brackets
 
-``` r
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE, warning = FALSE, message = FALSE}
 hyperVis(hyperhyper)
 ```
 
-![](images/hyperVis.png)
+\vspace{10pt}
 
 Now it's time to use the best model and predict test data
 
-``` r
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE}
 best.mod.index = which.max(unlist(lapply(hyperhyper, function(x) x$getPerformances())))
 best.mod = hyperhyper[[best.mod.index]]$models[[1]]$model
 
 performance(predict(object = best.mod, task = problem$data, subset = problem$test), 
             measures = acc)
-#>  acc 
-#> 0.97
+
 ```
 
-### Furthermore, the example folder contains eight detailed examples:
+\vspace{10pt}
 
--   neural networks:
-    -   hyperband to tune hyperparameters with mxnet and mlr
-    -   combine hyperband and MBO to tunehyperparameters with mxnet, mlr and mlrMBO
--   gradient boosting:
-    -   hyperband to tune hyperparameters with xgboost and mlr
-    -   combine hyperband and MBO to tunehyperparameters with xgboost mlr and mlrMBO
--   single- and multi-objective functions:
-    -   hyperband to tune hyperparameters with smoof and mlr
-    -   combine hyperband and MBO to tunehyperparameters with smoof mlr and mlrMBO
+### Furthermore, the example folder contains eight detailed examples: 
+
+* neural networks:
+    + hyperband to tune hyperparameters with mxnet and mlr
+    + combine hyperband and MBO to tunehyperparameters with mxnet, mlr and mlrMBO
+* gradient boosting:
+    + hyperband to tune hyperparameters with xgboost and mlr
+    + combine hyperband and MBO to tunehyperparameters with xgboost mlr and mlrMBO
+* single- and multi-objective functions:
+    + hyperband to tune hyperparameters with smoof and mlr
+    + combine hyperband and MBO to tunehyperparameters with smoof mlr and mlrMBO
