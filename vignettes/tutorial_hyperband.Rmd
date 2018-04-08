@@ -221,7 +221,7 @@ train.x = train[, -1]
 train.x = t(train.x/255)
 ```
 
-We would like to use a subset of the original MNIST data (LeCun & Cortes 2010) and tune a 
+We would like to use a small subset of the original MNIST data (LeCun & Cortes 2010) and tune a 
 neural network with hyperbandr.
 
 \vspace{10pt}
@@ -245,7 +245,7 @@ rm(test)
 
 \vspace{10pt}
 
-The data has 6000 observations, evenly distributed on 10 classes.
+Our data has 6000 observations, evenly distributed on 10 classes.
 
 \vspace{10pt}
 
@@ -295,6 +295,7 @@ The ParamHelpers package provides an easy way to construct the configuration spa
 
 ```{r, echo = TRUE, comment = NA}
 library("ParamHelpers")
+
 configSpace = makeParamSet(
   makeDiscreteParam(id = "optimizer", values = c("sgd", "rmsprop", "adam", "adagrad")),
   makeNumericParam(id = "learning.rate", lower = 0.001, upper = 0.1),
@@ -313,11 +314,7 @@ configSpace = makeParamSet(
 
 Now we need a function to sample configurations from our search space.
 
-The input values of that function are:
 
-* **par.set**: the search space
-* **n.configs**: the number of configurations to sample
-* **...**: additional arguments to access the bracket storage (see example 2 how to utilize this feature to combine hyperband with MBO)
 
 \vspace{10pt}
 
@@ -330,7 +327,7 @@ sample.fun = function(par.set, n.configs, ...) {
 
 ### 3: the initialization function
 
-This function takes a config and samples a corresponding value of $x_2$ in order to initialize the model
+
 
 \vspace{10pt}
 
@@ -340,11 +337,11 @@ init.fun = function(r, config, problem) {
     # you may have to install mxnet gpu, else just set ctx = mx.cpu()
     ctx = mx.gpu(),
     # we define a small CNN architecture with two conv and two dense layers
-    # (the second dense layer is our and will be automatically created)
+    # (the second dense layer is our output and will be automatically created by mlr)
     layers = 3, 
     conv.layer1 = TRUE, conv.layer2 = TRUE,
     conv.data.shape = c(28, 28),
-    num.layer1 = 8, num.layer2 = 16, num.layer3 = 32,
+    num.layer1 = 8, num.layer2 = 16, num.layer3 = 64,
     conv.kernel1 = c(3,3), conv.stride1 = c(1,1), 
     pool.kernel1 = c(2,2), pool.stride1 = c(2,2),
     conv.kernel2 = c(3,3), conv.stride2 = c(1,1), 
@@ -362,8 +359,7 @@ init.fun = function(r, config, problem) {
 
 ### 4: the training function
 
-To train our model, we simply sample values from a normal distribution and add or subtract them from our current $x_2$.
-If the performance improves, we keep the model, else we discard it and keep the old one.
+
 
 \vspace{10pt}
 
@@ -386,7 +382,7 @@ train.fun = function(mod, budget, problem) {
 
 ### 5: the performance function
 
-Finally, we define a function to evaluate the performance of each model
+
 
 \vspace{10pt}
 
@@ -402,13 +398,11 @@ performance.fun = function(model, problem) {
 
 \vspace{10pt}
 
-```{r, echo = TRUE, eval = FALSE}
+```{r, echo = TRUE, eval = TRUE}
 hyperhyper = hyperband(
   problem = problem,
-  # these are the actual hyperband parameters
   max.ressources = 81, 
   prop.discard = 3,
-  # since we chose accuracy, we want to maximize the performance
   max.perf = TRUE,
   id = "nnet", 
   par.set = configSpace, 
@@ -417,12 +411,262 @@ hyperhyper = hyperband(
   performance.fun = performance.fun)
 ```
 
-blabla
+With max.ressources = 81 and prop.discard = 3, we obtain a total of 5 brackets
 
 \vspace{10pt}
 
-```{r, echo = TRUE, eval = FALSE}
+```{r, echo = TRUE, eval = TRUE}
 length(hyperhyper)
+```
+
+\vspace{10pt}
+
+We can inspect the first bracket ..
+
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE}
+hyperhyper[[1]]
+```
+
+\vspace{10pt}
+
+.. and for instance check it's performance by calling the getPerformance() method
+
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE}
+hyperhyper[[1]]$getPerformances()
+```
+
+\vspace{10pt}
+
+We can also inspect the architecture of the best model of bracket 1
+
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE}
+hyperhyper[[1]]$models[[1]]$model
+```
+
+\vspace{10pt}
+
+Now let's see which bracket yields the best performance
+
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE}
+lapply(hyperhyper, function(x) x$getPerformances())
+```
+
+\vspace{10pt}
+
+We can call the hyperVis function to visualize all brackets
+
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE}
+hyperVis(hyperhyper)
+```
+
+\vspace{10pt}
+
+Now it's time to use the best model and predict test data
+
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE}
+best.mod.index = which.max(unlist(lapply(hyperhyper, function(x) x$getPerformances())))
+best.mod = hyperhyper[[best.mod.index]]$models[[1]]$model
+
+performance(predict(object = best.mod, task = problem$data, subset = problem$test), 
+            measures = acc)
+
+```
+
+\vspace{10pt}
+
+The hyperbandr package can also compute single bracket objects.
+For demonstration purposes we shrink our hyperparameter search space.
+Computing single bracket objects requires us to input some new parameters:
+
+* **s**: the s'th bracket we would like to compute
+* **B**: the (approximate) total amount of ressources that should be spend in that bracket
+    + the formula from the hyperband paper to compute B is B = (sMax + 1) * max.ressources 
+
+\vspace{10pt}
+
+```{r, echo = FALSE, eval = TRUE}
+# smaller config space for demonstration purposes
+configSpace = makeParamSet(
+  makeDiscreteParam(id = "optimizer", values = c("sgd", "adam")),
+  makeNumericParam(id = "learning.rate", lower = 0.001, upper = 0.1),
+  makeLogicalParam(id = "batch.normalization"))
+```
+
+```{r, echo = TRUE, eval = TRUE}
+brack = bracket$new(
+  problem = problem,
+  max.perf = TRUE,
+  max.ressources = 81,
+  prop.discard = 3,
+  s = 4,
+  B = (4 + 1)*81,
+  id = "nnet_bracket",
+  par.set = configSpace,
+  sample.fun = sample.fun,
+  train.fun = train.fun,
+  performance.fun = performance.fun)
+```
+
+\vspace{10pt}
+
+Each bracket object has a bracket storage object which is basically just another R6 class. The bracket storage shows us the hyperparameters, the current budget and the performance in an equation-ish style.
+
+\vspace{10pt}
+
+```{r, echo = FALSE, eval = TRUE}
+brack$bracket.storage$data.matrix
+```
+
+\vspace{10pt}
+
+We can complete the bracket by calling the run() method. That means we conduct successive halving according to the rules described in the hyperband paper until only one configuration is left.
+
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE}
+brack$run()
+```
+
+\vspace{10pt}
+
+While we call the run() method, we continuously write new lines to our bracket storage object.
+
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE}
+brack$bracket.storage$data.matrix
+```
+
+\vspace{10pt}
+
+Bracket objects have a visPerformances() method to immediately visualize the bracket.
+
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE}
+brack$visPerformances()
+```
+
+\vspace{10pt}
+
+Beside the graphic investigation, we can also extract the best models performance by simply calling the getPerformance() method.
+
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE}
+brack$getPerformances()
+```
+
+\vspace{10pt}
+
+Each bracket object contains multiple algorithm objects. The hyperbandr package allows us to create these algorithm objects soley and manipulate them. The input values are almost identical to those seen in the bracket object or when calling hyperband.
+
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE}
+set.seed(1337)
+myConfig = sample.fun(par.set = configSpace, n.configs = 1)[[1]]
+
+obj = algorithm$new(
+  problem = problem,
+  id = "nnet",
+  configuration = myConfig,
+  initial.budget = 1,
+  init.fun = init.fun,
+  train.fun = train.fun,
+  performance.fun = performance.fun)
+```
+
+\vspace{10pt}
+
+We can inspect architecture of our algorithm object by calling model
+
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE}
+obj$model
+```
+
+\vspace{10pt}
+
+Similar to the bracket object, each algorithm object has a algorithm storage object which is basically just another R6 class. The algorithm storage shows us the hyperparameters, the current budget and the performance in an equation-ish style.
+
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE}
+obj$algorithm.result$data.matrix
+```
+
+\vspace{10pt}
+
+The algorithm object does also have a getPerformance() method.
+
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE}
+obj$getPerformance()
+```
+
+\vspace{10pt}
+
+By calling the continue() method, we can continue trraining our algorithm object by an arbitrary amount of iterations.
+
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE}
+obj$continue(1)
+```
+
+\vspace{10pt}
+
+Like before, in each step we write new lines to our algorithm object.
+
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE}
+obj$algorithm.result$data.matrix
+```
+
+\vspace{10pt}
+
+So let us call continue(1) for 18 times to obtain a total of 20 iterations.
+
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE}
+invisible(capture.output(replicate(18, obj$continue(1))))
+```
+
+\vspace{10pt}
+
+This will write 18 additional lines to our algorithm storage.
+
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE}
+obj$algorithm.result$data.matrix
+```
+
+\vspace{10pt}
+
+To visualize the training process and the development of our validation error we simply call the visPerformce() method
+
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE}
+obj$visPerformance()
 ```
 
 
@@ -431,7 +675,7 @@ length(hyperhyper)
 
 
 
-```{r, echo = TRUE, warning = FALSE}
+```{r, echo = TRUE, warning = FALSE, message = FALSE}
 library("mlrMBO")
 library("ranger")
 
