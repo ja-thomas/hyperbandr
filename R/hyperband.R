@@ -109,7 +109,7 @@ hyperband = function(problem, max.ressources = 81, prop.discard = 3,
       sample.fun = sample.fun,
       train.fun = train.fun,
       performance.fun = performance.fun,
-      bracket.storage = totalStorage$data.matrix,
+      hyper.storage = totalStorage$data.matrix,
       ...
     )
     brack$run()
