@@ -1,6 +1,8 @@
-# This is a very generic R6 implementation of the hyperband algorithm for hyperparameter optimization and should thus work with any R package.
+# hyperband in R6 
 
-## The project is not yet finished but can already be used on your own problems.
+### This is a very generic R6 implementation of the hyperband algorithm for hyperparameter optimization (https://arxiv.org/pdf/1603.06560.pdf)
+
+### The project is not yet finished but can already be used on your own problems and should work with any other R package/algorithm as long as it is suitable for hyperband.
 
 ### Check the vignette folder for a very in-depth explanation + four exhaustive examples on how to use the package.
 
