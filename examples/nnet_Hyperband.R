@@ -163,8 +163,6 @@ brack$visPerformances()
 brack$getPerformances()
 
 ########### call hyperband ################
-
-t1 = Sys.time()
 hyperhyper = hyperband(
   problem = problem, 
   max.ressources = 81, 
@@ -175,9 +173,6 @@ hyperhyper = hyperband(
   sample.fun =  sample.fun,
   train.fun = train.fun, 
   performance.fun = performance.fun)
-t2 = Sys.time()
-time_gpu = t2 - t1
-time_gpu
 
 # visualize the brackets
 hyperVis(hyperhyper)

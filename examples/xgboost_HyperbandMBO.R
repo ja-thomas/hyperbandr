@@ -38,18 +38,18 @@ configSpace = makeParamSet(
   makeNumericParam("subsample", lower = 0.3, upper = 1, default = 0.6))
 
 # sample fun 
-sample.fun = function(par.set, n.configs, bracket.storage) {
+sample.fun = function(par.set, n.configs, hyper.storage) {
   # sample from configSpace
-  if (dim(bracket.storage)[[1]] == 0) {
+  if (dim(hyper.storage)[[1]] == 0) {
     lapply(sampleValues(par = par.set, n = n.configs), function(x) x[!is.na(x)])
   } else {
   # make MBO from dataBase  
     catf("Proposing points")
     ctrl = makeMBOControl(propose.points = n.configs)
     ctrl = setMBOControlInfill(ctrl, crit = crit.cb)
-    designMBO = data.table(bracket.storage)
+    designMBO = data.table(hyper.storage)
     designMBO = data.frame(designMBO[, mean(y), by = names(configSpace$pars)])
-    colnames(designMBO) = colnames(bracket.storage)[-(length(configSpace$pars) + 1)]
+    colnames(designMBO) = colnames(hyper.storage)[-(length(configSpace$pars) + 1)]
     opt.state = initSMBO(
       par.set = configSpace, 
       design = designMBO,

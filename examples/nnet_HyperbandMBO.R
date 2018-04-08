@@ -132,8 +132,6 @@ performance.fun = function(model, problem) {
 #######################################
 
 ########### call hyperband ################
-
-t1 = Sys.time()
 hyperhyperMBO = hyperband(
   problem = problem, 
   max.ressources = 81, 
@@ -144,9 +142,6 @@ hyperhyperMBO = hyperband(
   sample.fun =  sample.fun.mbo,
   train.fun = train.fun, 
   performance.fun = performance.fun)
-t2 = Sys.time()
-time_gpu = t2 - t1
-time_gpu
 
 # visualize the brackets
 hyperVis(hyperhyperMBO)

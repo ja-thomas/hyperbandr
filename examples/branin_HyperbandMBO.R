@@ -51,7 +51,7 @@ sample.fun = function(par.set, n.configs, hyper.storage) {
     ctrl = setMBOControlInfill(ctrl, crit = crit.cb)
     designMBO = data.table(hyper.storage)
     designMBO = data.frame(designMBO[, mean(y), by = names(configSpace$pars)])
-    colnames(designMBO) = colnames(hyper.storage)[-2]
+    colnames(designMBO) = colnames(hyper.storage)[-(length(configSpace$pars) + 1)]
     opt.state = initSMBO(
       par.set = configSpace, 
       design = designMBO,
