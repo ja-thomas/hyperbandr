@@ -673,30 +673,66 @@ obj$visPerformance()
 \newpage
 ## 3. Example 2: hyperband in combination with MBO to optimize a **neural network** with [mxnet](https://github.com/apache/incubator-mxnet/tree/master/R-package), [mlr](https://github.com/mlr-org/mlr) and [mlrMBO](https://github.com/mlr-org/mlrMBO)
 
+Recall the bracket storage object of example 1:
 
+Each bracket has a bracket storage, containing all configurations in that bracket as well as their corresponding performance values, e.g.: 
+
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE}
+head(brack$bracket.storage$data.matrix)
+```
+
+\vspace{10pt}
+
+At each step of successive halving, we write new lines to the bracket storage object.
+Consequently, configurations which survived one step of successive halving occur at least
+two times in the bracket storage.
+
+When we call hyperband, another R6 class called hyper storage is automatically being created.
+That hyper storage object takes bracket storage objects and concatenates them.
+Thus, the hyper storage contains the accumulated information of all configurations over all brackets,
+which have been computed so far.
+
+For instance, if we begin with the third bracket, the hyper storage object contains all configurations and performance values of the first and the second bracket.
+
+Instead of random sampling configurations in the third bracket, we could exploit the information 
+in the hyper storage object to propose new configurations in a model based fashion (MBO).
+
+To this we simply have to adjust our sampling function.
+
+One potential implementation could look like this:
+
+\vspace{10pt}
 
 ```{r, echo = TRUE, warning = FALSE, message = FALSE}
 library("mlrMBO")
 library("ranger")
 
-sample.fun.mbo = function(par.set, n.configs, bracket.storage) {
-  # sample from configSpace
-  if (dim(bracket.storage)[[1]] == 0) {
+sample.fun.mbo = function(par.set, n.configs, hyper.storage) {
+  # if the hyper storage is empty, sample from our search space 
+  if (dim(hyper.storage)[[1]] == 0) {
     lapply(sampleValues(par = par.set, n = n.configs), function(x) x[!is.na(x)])
+  # else, propose configurations via MBO
   } else {
-  # make MBO from bracket.storage  
     catf("Proposing points")
     ctrl = makeMBOControl(propose.points = n.configs)
+    # set the infill criterion
     ctrl = setMBOControlInfill(ctrl, crit = crit.cb)
-    designMBO = data.table(bracket.storage)
+    designMBO = data.table(hyper.storage)
+    # we have to keep in mind, that some configurations occur multiple times,
+    # thus we have to aggregate their performance according to some rule:
+    # here we simply do this by electing the best performance that we observe
     designMBO = data.frame(designMBO[, max(y), by = names(configSpace$pars)])
-    colnames(designMBO) = colnames(bracket.storage)[-(length(configSpace$pars) + 1)]
+    colnames(designMBO) = colnames(hyper.storage)[-(length(configSpace$pars) + 1)]
+    # initSMBO enables us to conduct human-in-the-loop MBO
     opt.state = initSMBO(
       par.set = configSpace, 
       design = designMBO,
       control = ctrl, 
       minimize = FALSE, 
       noisy = FALSE)
+    # based on the surrogate model, proposePoints yields us our configurations
     prop = proposePoints(opt.state)
     propPoints = prop$prop.points
     rownames(propPoints) = c()
@@ -706,9 +742,13 @@ sample.fun.mbo = function(par.set, n.configs, bracket.storage) {
 }
 ```
 
+\vspace{10pt}
 
+Now we simply run hyperband with the new sampling function
 
-```{r, echo = TRUE, eval = FALSE}
+\vspace{10pt}
+
+```{r, echo = TRUE, eval = TRUE}
 hyperhyperMBO = hyperband(
   problem = problem, 
   max.ressources = 81, 
@@ -721,52 +761,329 @@ hyperhyperMBO = hyperband(
   performance.fun = performance.fun)
 ```
 
+\vspace{10pt}
 
+Let us compare the results of our vanilla hyperband and the combination of hyperband with MBO:
+
+\vspace{10pt}
+
+```{r, echo = FALSE, results = "hide", fig.keep = "none", fig.show = "hide"}
+hyperPlotOne = hyperVis(hyperhyper)
+hyperPlotTwo = hyperVis(hyperhyperMBO)
+```
+
+```{r, echo = FALSE}
+grid.arrange(hyperPlotOne, hyperPlotTwo, ncol = 1, nrow = 2)
+```
+
+\vspace{10pt}
+
+we see blabla, lets do this
+
+\vspace{10pt}
+
+```{r, echo = FALSE}
+vanilla = matrix(unlist(lapply(hyperhyper, function(x) x$getPerformances())), 
+                 ncol = 1, nrow = 5, byrow = TRUE)
+mbo = matrix(unlist(lapply(hyperhyperMBO, function(x) x$getPerformances())), 
+             ncol = 1, nrow = 5, byrow = TRUE)
+results = data.frame(vanilla, mbo)
+rownames(results) = c("bracket 4", "bracket 3", "bracket 2", "bracket 1", "bracket 0")
+```
+
+\vspace{10pt}
+
+kkkk
 
 \newpage
 ## 4. Example 3: hyperband to optimize a **gradient boosting** model with [xgboost](https://github.com/dmlc/xgboost/tree/master/R-package) and [mlr](https://github.com/mlr-org/mlr)
 
 
 
-```{r, echo = TRUE}
+```{r, echo = FALSE, warning = FALSE, message = FALSE}
 library("xgboost")
 
-
+data(agaricus.train)
+data(agaricus.test)
 ```
-
-
 
 ```{r, echo = TRUE}
+train.set = xgb.DMatrix(agaricus.train$data, label = agaricus.train$label)
+test.set = xgb.DMatrix(agaricus.test$data, label = agaricus.test$label)
 
+problem = list(train = train.set, val = test.set)
 ```
 
+```{r, echo = TRUE}
+rm(train.set)
+rm(test.set) 
+```
 
+\vspace{10pt}
+
+we see blabla, lets do this
+
+\vspace{10pt}
+
+```{r, echo = TRUE}
+configSpace = makeParamSet(
+  makeIntegerParam("max_depth", lower = 3, upper = 15, default = 3),
+  makeNumericParam("colsample_bytree", lower = 0.3, upper = 1, default = 0.6),
+  makeNumericParam("subsample", lower = 0.3, upper = 1, default = 0.6)
+)
+```
+
+\vspace{10pt}
+
+we see blabla, lets do this
+
+\vspace{10pt}
+
+```{r, echo = TRUE}
+sample.fun = function(par.set, n.configs, ...) {
+  lapply(sampleValues(par = par.set, n = n.configs), function(x) x[!is.na(x)])
+}
+```
+
+\vspace{10pt}
+
+we see blabla, lets do this
+
+\vspace{10pt}
+
+```{r, echo = TRUE}
+init.fun = function(r, config, problem) {
+  watchlist = list(eval = problem$val, train = problem$train)
+  capture.output({mod = xgb.train(config, problem$train, nrounds = r, watchlist, verbose = 1)})
+  return(mod)
+}
+```
+
+\vspace{10pt}
+
+we see blabla, lets do this
+
+\vspace{10pt}
+
+```{r, echo = TRUE}
+train.fun = function(mod, budget, problem) {
+  watchlist = list(eval = problem$val, train = problem$train)
+  capture.output({mod = xgb.train(xgb_model = mod, 
+    nrounds = budget, params = mod$params, problem$train, watchlist, verbose = 1)})
+  return(mod)
+}
+```
+
+\vspace{10pt}
+
+we see blabla, lets do this
+
+\vspace{10pt}
+
+```{r, echo = TRUE}
+performance.fun = function(model, problem) {
+  tail(model$evaluation_log$eval_rmse, n = 1)
+}
+```
+
+\vspace{10pt}
+
+we see blabla, lets do this
+
+\vspace{10pt}
+
+```{r, echo = TRUE}
+hyperhyper = hyperband(
+  problem = problem,
+  max.ressources = 81, 
+  prop.discard = 3,  
+  max.perf = FALSE,
+  id = "xgboost", 
+  par.set = configSpace, 
+  sample.fun =  sample.fun,
+  train.fun = train.fun, 
+  performance.fun = performance.fun)
+```
+
+\vspace{10pt}
+
+we see blabla, lets do this
+
+\vspace{10pt}
+
+```{r, echo = TRUE}
+hyperVis(hyperhyper)
+```
+
+\vspace{10pt}
+
+we see blabla, lets do this
+
+\vspace{10pt}
+
+```{r, echo = TRUE}
+lapply(hyperhyper, function(x) x$getPerformances()) 
+```
 
 \newpage
 ## 5. Example 4: hyperband to optimize a **function** with [smoof](https://github.com/jakobbossek/smoof)
 
+```{r, echo = TRUE}
+library("smoof")
+braninProb = makeBraninFunction()
+```
 
+\vspace{10pt}
+
+we see blabla, lets do this
+
+\vspace{10pt}
+
+```{r, echo = FALSE}
+opt = data.table(x1 = getGlobalOptimum(braninProb)$param$x1, x2 = getGlobalOptimum(braninProb)$param$x2)
+(vis = autoplot(braninProb) + geom_point(data = opt, aes(x = x1, y = x2), shape = 20, colour = "red", size = 5))
+print(braninProb)
+```
 
 ```{r, echo = TRUE}
+getParamSet(braninProb)
+```
+
+\vspace{10pt}
+
+we see blabla, lets do this
+
+\vspace{10pt}
+
+```{r, echo = TRUE}
+configSpace = makeParamSet(
+    makeNumericParam(id = "x1", lower = -5, upper = 10.1))
+```
+
+\vspace{10pt}
+
+we see blabla, lets do this
+
+\vspace{10pt}
+```{r, echo = TRUE}
+sample.fun = function(par.set, n.configs, ...) {
+  sampleValues(par = par.set, n = n.configs)
+}
+```
+
+\vspace{10pt}
+
+we see blabla, lets do this
+
+\vspace{10pt}
+```{r, echo = TRUE}
+init.fun = function(r, config, problem) {
+  x1 = unname(unlist(config))
+  x2 = runif(1, 0, 15)
+  mod = c(x1, x2)
+  return(mod)
+}
+```
+
+\vspace{10pt}
+
+we see blabla, lets do this
+
+\vspace{10pt}
+```{r, echo = TRUE}
+train.fun = function(mod, budget, problem) {
+  for(i in seq_len(budget)) {
+    mod.new = c(mod[[1]], mod[[2]] + rnorm(1, sd = 3))
+    if(performance.fun(mod.new) < performance.fun(mod))
+      mod = mod.new
+  }
+  return(mod)
+}
+```
+
+\vspace{10pt}
+
+we see blabla, lets do this
+
+\vspace{10pt}
+```{r, echo = TRUE}
+performance.fun = function(model, problem) {
+  braninProb(c(model[[1]], model[[2]]))
+}
+```
+
+\vspace{10pt}
+
+we see blabla, lets do this
+
+\vspace{10pt}
+```{r, echo = TRUE}
+hyperhyper = hyperband(
+  problem = braninProb,
+  max.ressources = 81, 
+  prop.discard = 3,  
+  max.perf = FALSE,
+  id = "branin", 
+  par.set = configSpace, 
+  sample.fun =  sample.fun,
+  train.fun = train.fun, 
+  performance.fun = performance.fun)
+```
+
+\vspace{10pt}
+
+we see blabla, lets do this
+
+```{r, echo = TRUE}
+hyperVis(hyperhyper)
+```
+
+\vspace{10pt}
+
+we see blabla, lets do this
+
+\vspace{10pt}
+
+```{r, echo = TRUE}
+lapply(hyperhyper, function(x) x$getPerformances())
+```
+
+\vspace{10pt}
+
+we see blabla, lets do this
+
+\vspace{10pt}
+```{r, echo = TRUE}
+results = lapply(hyperhyper, function(x) x$models[[1]]$model)
+data = data.frame(matrix(unlist(results), ncol = 2, byrow = TRUE))
+rownames(data) = c("bracket 1", "bracket 2", "bracket 3", "bracket 4", "bracket 5")
+colnames(data) = c("x1", "x2")
+
+(vis = vis + 
+  geom_point(data = data, mapping = aes(x = x1, y = x2), shape = 3, size = 3) + 
+  geom_text_repel(data = data,
+                  mapping = aes(x = x1, y = x2, color = factor(x1)),
+                  label = rownames(data),
+                  max.iter = 10000,
+                  force = 3,
+                  size = 4,
+                  box.padding = unit(5, "lines")) + 
+  theme_bw() + 
+  theme(legend.position = "none")) + 
+  scale_x_continuous(name = "configuration x1") +
+  scale_y_continuous(name = "hyperparameter x2")
 
 ```
 
+\vspace{10pt}
 
+we see blabla, lets do this
 
-```{r, echo = TRUE}
-
-```
-
-
+\vspace{10pt}
 
 \newpage
 ## 6. appendix: introduction to [mlr](https://github.com/mlr-org/mlr)
 
-
-
-```{r, echo = TRUE}
-
-```
 
 
 
