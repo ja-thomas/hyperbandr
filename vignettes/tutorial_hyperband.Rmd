@@ -310,11 +310,11 @@ configSpace = makeParamSet(
 )
 ```
 
+\vspace{10pt}
+
 ### 2: the sampling function
 
 Now we need a function to sample configurations from our search space.
-
-
 
 \vspace{10pt}
 
@@ -325,9 +325,9 @@ sample.fun = function(par.set, n.configs, ...) {
 }
 ```
 
+\vspace{10pt}
+
 ### 3: the initialization function
-
-
 
 \vspace{10pt}
 
@@ -357,9 +357,9 @@ init.fun = function(r, config, problem) {
 }
 ```
 
+\vspace{10pt}
+
 ### 4: the training function
-
-
 
 \vspace{10pt}
 
@@ -380,9 +380,9 @@ train.fun = function(mod, budget, problem) {
 }
 ```
 
+\vspace{10pt}
+
 ### 5: the performance function
-
-
 
 \vspace{10pt}
 
