@@ -221,7 +221,7 @@ Now we can call hyperband
 ```{r, echo = TRUE, eval = TRUE}
 hyperhyper = hyperband(
   problem = problem,
-  max.ressources = 81, 
+  max.resources = 81, 
   prop.discard = 3,
   max.perf = TRUE,
   id = "nnet", 
@@ -233,7 +233,7 @@ hyperhyper = hyperband(
 
 \vspace{10pt}
 
-With max.ressources = 81 and prop.discard = 3, we obtain a total of 5 brackets
+With max.resources = 81 and prop.discard = 3, we obtain a total of 5 brackets
 
 \vspace{10pt}
 

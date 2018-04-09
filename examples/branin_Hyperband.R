@@ -103,7 +103,7 @@ obj$visPerformance()
 brack = bracket$new(
   problem = braninProb, 
   max.perf = FALSE,
-  max.ressources = 200,
+  max.resources = 200,
   prop.discard = 4,
   s = 4,
   B = (4 + 1)*200,
@@ -127,7 +127,7 @@ brack$getPerformances()
 ########### call hyperband ############ 
 hyperhyper = hyperband(
   problem = braninProb,
-  max.ressources = 81, 
+  max.resources = 81, 
   prop.discard = 3,  
   max.perf = FALSE,
   id = "branin", 

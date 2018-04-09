@@ -134,7 +134,7 @@ performance.fun = function(model, problem) {
 ########### call hyperband ################
 hyperhyperMBO = hyperband(
   problem = problem, 
-  max.ressources = 81, 
+  max.resources = 81, 
   prop.discard = 3,  
   max.perf = TRUE,
   id = "nnet", 

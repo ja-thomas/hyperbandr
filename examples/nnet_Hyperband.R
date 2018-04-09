@@ -141,7 +141,7 @@ obj$visPerformance()
 brack = bracket$new(
   problem = problem,
   max.perf = TRUE,
-  max.ressources = 81,
+  max.resources = 81,
   prop.discard = 3,
   s = 4,
   B = (4 + 1)*81,
@@ -165,7 +165,7 @@ brack$getPerformances()
 ########### call hyperband ################
 hyperhyper = hyperband(
   problem = problem, 
-  max.ressources = 81, 
+  max.resources = 81, 
   prop.discard = 3,  
   max.perf = TRUE,
   id = "nnet", 

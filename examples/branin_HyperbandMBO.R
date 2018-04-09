@@ -97,7 +97,7 @@ performance.fun = function(model, problem) {
 ########### call hyperband ############ 
 hyperhyperMBO = hyperband(
   problem = braninProb,
-  max.ressources = 81, 
+  max.resources = 81, 
   prop.discard = 3,  
   max.perf = FALSE,
   id = "branin_MBO",

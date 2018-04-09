@@ -124,7 +124,7 @@ Now we can call hyperband (this needs like 5 minuten on a GTX1070)
 ``` r
 hyperhyper = hyperband(
   problem = problem,
-  max.ressources = 81, 
+  max.resources = 81, 
   prop.discard = 3,
   max.perf = TRUE,
   id = "nnet", 
@@ -154,7 +154,7 @@ hyperhyper = hyperband(
 #> Iteration 0, with 1 Algorithms left (Budget: 81)
 ```
 
-With max.ressources = 81 and prop.discard = 3, we obtain a total of 5 brackets
+With max.resources = 81 and prop.discard = 3, we obtain a total of 5 brackets
 
 ``` r
 length(hyperhyper)
@@ -178,10 +178,10 @@ hyperhyper[[1]]
 #>     getPerformances: function () 
 #>     getTopKModels: function (k) 
 #>     id: nnet
-#>     initialize: function (problem, max.perf, max.ressources, prop.discard, s, 
+#>     initialize: function (problem, max.perf, max.resources, prop.discard, s, 
 #>     iteration: 4
 #>     max.perf: TRUE
-#>     max.ressources: NULL
+#>     max.resources: NULL
 #>     models: list
 #>     n.configs: 1
 #>     par.set: ParamSet

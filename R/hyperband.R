@@ -7,7 +7,7 @@
 #' TRUE if to maximize the performance (e.g. accuracy of a neural net), 
 #' FALSE if to minimize the performance (e.g. find the minimum of the branin function). \cr
 #' Default: TRUE
-#' @param max.ressources [\code{integer()}]\cr
+#' @param max.resources [\code{integer()}]\cr
 #' The maximum amount of resource that canbe allocated to a single configuration
 #' @param prop.discard [\code{integer()}]\cr
 #' An input that controls the proportion of configurations discarded in each round of successive halving
@@ -72,7 +72,7 @@
 #'  
 #' ########### call hyperband ############ 
 #' hyperhyper = hyperband(
-#'   max.ressources = 81, 
+#'   max.resources = 81, 
 #'   prop.discard = 3,  
 #'   max.perf = FALSE,
 #'   id = "branin", 
@@ -86,11 +86,11 @@
 #' lapply(hyperhyper, function(x) x$getPerformances())
 
 
-hyperband = function(problem, max.ressources = 81, prop.discard = 3,
+hyperband = function(problem, max.resources = 81, prop.discard = 3,
   max.perf = TRUE, id, par.set, sample.fun, train.fun, performance.fun, ...) {
   # |sMax + 1| are the total number of brackets to try
-  sMax =  floor(log(max.ressources, base = prop.discard))
-  B = (sMax + 1)*max.ressources
+  sMax =  floor(log(max.resources, base = prop.discard))
+  B = (sMax + 1)*max.resources
   # initialize a list for all #sMax brackets
   bracketWinners = as.list(numeric(sMax + 1))
   totalStorage = hyperStorage$new(par.set)
@@ -100,7 +100,7 @@ hyperband = function(problem, max.ressources = 81, prop.discard = 3,
     brack = bracket$new(
       problem, 
       max.perf = max.perf,
-      max.ressources = max.ressources,
+      max.resources = max.resources,
       prop.discard = prop.discard,
       s = s,
       B = B,

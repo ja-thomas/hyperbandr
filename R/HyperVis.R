@@ -60,7 +60,7 @@
 #'  
 #' ########### call hyperband ############ 
 #' hyperhyper = hyperband(
-#'   max.ressources = 81, 
+#'   max.resources = 81, 
 #'   prop.discard = 3,  
 #'   max.perf = FALSE,
 #'   id = "branin", 

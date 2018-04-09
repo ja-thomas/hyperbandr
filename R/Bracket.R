@@ -7,16 +7,16 @@
 #' @field max.perf [\code{logical()}]\cr
 #' TRUE if to maximize the performance (e.g. accuracy of a neural net), 
 #' FALSE if to minimize the performance (e.g. find the minimum of the branin function).
-#' @field max.ressources [\code{integer()}]\cr
+#' @field max.resources [\code{integer()}]\cr
 #' The maximum amount of resource that can be allocated to a single configuration
 #' @field prop.discard [\code{integer()}]\cr
 #' An input that controls the proportion of configurations discarded in each round of successive halving
 #' @field s [\code{integer()}]\cr
 #' The s'th bracket object to create. Note that s is in \cr
-#' \code{(0,...,floor(log(max.ressources, base = prop.discard)))}
+#' \code{(0,...,floor(log(max.resources, base = prop.discard)))}
 #' @field B [\code{integer()}]\cr
 #' The total budget for the bracket. Note that B is given by  \cr
-#' \code{(max(s) + 1)*max.ressources}
+#' \code{(max(s) + 1)*max.resources}
 #' @field id [\code{string}]\cr
 #' An id for each Algorithm object in the bracket object
 #' @field par.set \cr
@@ -87,7 +87,7 @@
 #' ###### make branin bracket object #####
 #' brack = bracket$new(
 #'   max.perf = FALSE,
-#'   max.ressources = 81,
+#'   max.resources = 81,
 #'   prop.discard = 3,
 #'   s = 4,
 #'   B = (4 + 1)*81,
@@ -115,7 +115,7 @@ bracket = R6Class("Bracket",
     par.set = NULL,
     sample.fun = NULL,
     configurations = NULL,
-    max.ressources = NULL,
+    max.resources = NULL,
     models = NULL,
     prop.discard = NULL,
     s = NULL,
@@ -127,15 +127,15 @@ bracket = R6Class("Bracket",
     bracket.storage = NULL,
     adjust = NULL,
     ## initialize the bracket object
-    initialize = function(problem, max.perf, max.ressources, prop.discard, s, B, id, 
+    initialize = function(problem, max.perf, max.resources, prop.discard, s, B, id, 
         par.set, sample.fun, train.fun, performance.fun, ...) {
       self$max.perf = max.perf
       self$id = id
       self$prop.discard = prop.discard
       self$s = s
       self$B = B
-      self$n.configs = ceiling((self$B / max.ressources) * (prop.discard^s / (s + 1)))
-      self$r.config = floor(max.ressources * prop.discard^(-s))
+      self$n.configs = ceiling((self$B / max.resources) * (prop.discard^s / (s + 1)))
+      self$r.config = floor(max.resources * prop.discard^(-s))
       self$par.set = par.set
       self$configurations = sample.fun(self$par.set, self$n.configs, ...)
       # create the models
