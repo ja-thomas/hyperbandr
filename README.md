@@ -119,7 +119,7 @@ performance.fun = function(model, problem) {
 }
 ```
 
-Now we can call hyperband
+Now we can call hyperband (this needs like 5 minuten on a GTX1070)
 
 ``` r
 hyperhyper = hyperband(
