@@ -31,15 +31,14 @@ test.set = setdiff(1:nrow(mnist), c(train.set, val.set))
 # Since we use mlr, we define a classification task to encapsulate the data
 task = makeClassifTask(data = mnist, target = "label")
 
-# Finally, we define the problem list
+# Finally, we define a problem list which incorporates the data and the subsampling rule
 problem = list(data = task, train = train.set, val = val.set, test = test.set)
 ```
 
-At first we define a search space. The ParamHelpers package provides an easy way to construct the latter one.
-
+At first we define a search space. 
 ``` r
+# The ParamHelpers package provides an easy way to construct the latter one.
 library("ParamHelpers")
-
 configSpace = makeParamSet(
   makeDiscreteParam(id = "optimizer", values = c("sgd", "rmsprop", "adam", "adagrad")),
   makeNumericParam(id = "learning.rate", lower = 0.001, upper = 0.1),
@@ -71,7 +70,7 @@ init.fun = function(r, config, problem) {
     # you may have to install mxnet gpu, else just set ctx = mx.cpu()
     ctx = mx.gpu(),
     # we define a small CNN architecture with two conv and two dense layers
-    # (the second dense layer is our output and will be automatically created by mlr)
+    # (the second dense layer is our output and will be created automatically by mlr)
     layers = 3, 
     conv.layer1 = TRUE, conv.layer2 = TRUE,
     conv.data.shape = c(28, 28),
@@ -240,7 +239,7 @@ hyperVis(hyperhyper)
 
 ![](images/hyperVis.png)
 
-Now it's time to use the best model and predict test data
+Now we use the best model and predict test data
 
 ``` r
 best.mod.index = which.max(unlist(lapply(hyperhyper, function(x) x$getPerformances())))
