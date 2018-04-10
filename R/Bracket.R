@@ -128,7 +128,7 @@ bracket = R6Class("Bracket",
     adjust = NULL,
     ## initialize the bracket object
     initialize = function(problem, max.perf, max.resources, prop.discard, s, B, id, 
-        par.set, sample.fun, train.fun, performance.fun, ...) {
+        par.set, sample.fun, init.fun, train.fun, performance.fun, ...) {
       self$max.perf = max.perf
       self$id = id
       self$prop.discard = prop.discard
