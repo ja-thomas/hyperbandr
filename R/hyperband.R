@@ -87,7 +87,7 @@
 
 
 hyperband = function(problem, max.resources = 81, prop.discard = 3,
-  max.perf = TRUE, id, par.set, sample.fun, train.fun, performance.fun, ...) {
+  max.perf = TRUE, id, par.set, sample.fun, init.fun, train.fun, performance.fun, ...) {
   # |sMax + 1| are the total number of brackets to try
   sMax =  floor(log(max.resources, base = prop.discard))
   B = (sMax + 1)*max.resources
