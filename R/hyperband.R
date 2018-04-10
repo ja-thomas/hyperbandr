@@ -94,6 +94,7 @@ hyperband = function(problem, max.resources = 81, prop.discard = 3,
   # initialize a list for all #sMax brackets
   bracketWinners = as.list(numeric(sMax + 1))
   totalStorage = hyperStorage$new(par.set)
+  init.fun = init.fun
   # begin hyperband
   for(s in sMax:0) {
     catf("Beginning with bracket %s", s)
