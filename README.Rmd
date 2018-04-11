@@ -318,8 +318,8 @@ performance(predict(object = best.mod, task = problem$data, subset = problem$tes
     + combine hyperband and MBO to tunehyperparameters with mxnet, mlr and mlrMBO
 * gradient boosting:
     + hyperband to tune hyperparameters with xgboost and mlr
-    + combine hyperband and MBO to tunehyperparameters with xgboost mlr and mlrMBO
+    + combine hyperband and MBO to tunehyperparameters with xgboost, mlr and mlrMBO
 * single- and multi-objective functions:
     + hyperband to tune hyperparameters with smoof and mlr
-    + combine hyperband and MBO to tunehyperparameters with smoof mlr and mlrMBO
+    + combine hyperband and MBO to tune hyperparameters with smoof, mlr and mlrMBO
     

@@ -45,7 +45,7 @@ In order to call **hyperband**, we need to define five things:
 
 ### 1: the hyperparameter search space
 
-At first we define a search space. 
+We begin with the hyperparameter search space. 
 That search space includes all hyperparameters we would like to consider, as well as a reasonable range of values for each of them. 
 
 \vspace{10pt}
@@ -62,7 +62,7 @@ The inputs of that function are:
 
 * **par.set**: the search space
 * **n.configs**: the number of configurations to sample
-* **...**: additional arguments to access the bracket storage (see example 2 how to utilize this feature to combine hyperband with MBO)
+* **...**: additional arguments to access the hyper storage (see example 2 how to utilize this feature to combine hyperband with MBO)
 
 \vspace{10pt}
 
@@ -74,7 +74,7 @@ sample.fun = function(par.set, n.configs, ...) {
 
 \vspace{10pt}
 
-The sampling function must return a list of named lists, containing the hyperparameter configurations. Consequently, the latter ones structure should look like this:
+The sampling function must return a list of named lists, containing the sampled hyperparameter configurations. For instance, the structure of the return value of our sampling function for an arbitrary example should look like this:
 
 ```{r, echo = FALSE}
 library("ParamHelpers")
@@ -88,21 +88,24 @@ mySearchSpace = makeParamSet(
 sample.fun = function(par.set, n.configs, ...) {
   lapply(sampleValues(par = par.set, n = n.configs), function(x) x[!is.na(x)])
 }
-
 set.seed(6)
+```
 
+```{r, echo = TRUE, eval = FALSE}
 str(sample.fun(par.set = mySearchSpace, n.configs = 2))
 ```
 
+\vspace{10pt}
+
 ### 3: the initialization function
 
-To initialization function initialized our models.
+We do also need a function to initialize our models.
 
-We need to inpuit three arguments:
+The inputs of that function must include:
 
-* **r**: the budget allocation to initialize the model with
-* **config**: the hyperparameter configuration for the model
-* **problem**: an arbitrary object containing the data and if necessary the resampling rule
+* **r**: the amount of budget to initialize the model with
+* **config**: a hyperparameter configuration
+* **problem**: an object containing the data and if necessary a resampling rule
 
 \vspace{10pt}
 
@@ -117,13 +120,13 @@ init.fun = function(r, config, problem) {
 The training function takes an initialized model and continues the training process.
 Hyperband applies successive halving and thus eliminates a bunch of models.
 Instead of plainly training a new model from scratch, we rather continue training our existing model.
-That will inevitably save a lot of time.
+That will save us a lot of time.
 
 Our inputs are:
 
 * **mod**: a model 
-* **budget**: the budget allocation for the model
-* **problem**: an arbitrary object containing the data and if necessary the resampling rule
+* **budget**: the new budget allocation
+* **problem**: an arbitrary object containing the data and if necessary a resampling rule
 
 \vspace{10pt}
 
@@ -136,12 +139,12 @@ train.fun = function(mod, budget, problem) {
 ### 5: the performance function
 
 Our final ingredient is the performance function.
-That function simply evaluated the performance of the current model state.
+That function simply evaluates the performance of the model at its current state.
 
 Inputs include:
 
 * **model**: a model to evaluate
-* **problem**: an arbitrary object containing the data and if necessary the resampling rule
+* **problem**: an arbitrary object containing the data and if necessary a resampling rule
 
 \vspace{10pt}
 
@@ -153,16 +156,16 @@ performance.fun = function(model, problem) {
 
 \vspace{10pt}
 
-### Now we can finally call hyperband to optimize our problem at hand.
+Now that we have defined these functions, we can finally call hyperband.
 
 The inputs of hyperband are:
 
-* **problem**: an arbitrary object containing the data and if necessary the resampling rule
-* **max.ressources**: the maximum amount of resource that can be allocated to a single configuration 
+* **problem**: an arbitrary object containing the data and if necessary a resampling rule
+* **max.resources**: the maximum amount of resource that can be allocated to a single configuration 
     + the default is 81, that means in particular that we sample 81 configurations in our first bracket
 * **prop.discard**: a control parameter to define the proportion of configurations that will be discarded in each round of successive halving
     + the default is 3, that means in particular that we eliminate $2/3$ in each round of successive halving
-* **max.perf**: a logical value indicating whether we want to maximize (e.g. accuracy) or minimize (e.g. MSE) the performance
+* **max.perf**: a logical indicating whether we want to maximize (e.g. accuracy) or minimize (e.g. MSE) the performance measure
 * **id**: a string generating a unique id for each model
 * **par.set**: the hyperparameter search space
 * **sample.fun**: the sampling function
@@ -174,32 +177,39 @@ The inputs of hyperband are:
 ```{r, echo = TRUE, eval = FALSE}
 hyperhyper = hyperband(
   problem = myProblem,
-  max.ressources = 81, 
+  max.resources = 81, 
   prop.discard = 3,
   max.perf = TRUE or FALSE,
   id = "my id", 
   par.set = mySearchSpace, 
   sample.fun = sample.fun,
+  init.fun = init.fun,
   train.fun = train.fun, 
   performance.fun = performance.fun
 )
 ```
 
+\vspace{10pt}
+
+We obtain according to the hyperband algorithm $floor(log_{prop.discard}(max.resources)) + 1$ brackets, which are all R6 objects. These objects contain a variety of methods, which will be discussed in the example section.
 
 \newpage
 ## 2. Example 1: hyperband to optimize a **neural network** with [mxnet](https://github.com/apache/incubator-mxnet/tree/master/R-package) and [mlr](https://github.com/mlr-org/mlr)
+
+If you are not familiar with mlr, please go to the appendix for a short introduction.
 
 ```{r, echo = FALSE, warning = FALSE, message = FALSE}
 #######################################
 ############## packages ###############
 #######################################
-
+setwd("C:/Users/Niklas/hyperbandr")
 library("R6")
 library("devtools")
 load_all()
 library("mxnet")
 library("mlr") # you might need to install mxnet branch of mlr: devtools::install_github("mlr-org/mlr", ref = "mxnet")
 library("ggplot2")
+library("ggrepel")
 library("gridExtra")
 library("dplyr")
 library("data.table")
@@ -262,24 +272,24 @@ table(mnist$label)
 \vspace{10pt}
 
 Let us create a list, which we call *problem*. 
-That list should contain the data, as well as a subsampling rule. 
+That list should contain the data, as well as a resampling rule. 
 
 \vspace{10pt}
 
 ```{r, echo = TRUE}
-# We sample 2/3 of our data for training
-train.set = sample(nrow(mnist), size = (2/300)*nrow(mnist))
+# We sample 2/3 of our data for training:
+train.set = sample(nrow(mnist), size = (2/3)*nrow(mnist))
 
-# Another 1/6 will be used for validation during training
-val.set = sample(setdiff(1:nrow(mnist), train.set), 10)
+# Another 1/6 will be used for validation during training:
+val.set = sample(setdiff(1:nrow(mnist), train.set), 1000)
 
-# The remaining 1/6 will be stored for testing
+# The remaining 1/6 will be stored for testing:
 test.set = setdiff(1:nrow(mnist), c(train.set, val.set))
 
-# Since we use mlr, we define a classification task to encapsulate the data
+# Since we use mlr, we define a classification task to encapsulate the data:
 task = makeClassifTask(data = mnist, target = "label")
 
-# Finally, we define the problem list
+# Finally, we define the problem list:
 problem = list(data = task, train = train.set, val = val.set, test = test.set)
 ```
 
@@ -287,7 +297,7 @@ problem = list(data = task, train = train.set, val = val.set, test = test.set)
 rm(mnist)
 ```
 
-### 1: the configuration space
+### 2.1: the configuration space
 
 The ParamHelpers package provides an easy way to construct the configuration space
 
@@ -295,7 +305,7 @@ The ParamHelpers package provides an easy way to construct the configuration spa
 
 ```{r, echo = TRUE, comment = NA}
 library("ParamHelpers")
-
+# We choose to search for optimal setting of the following hyperparameters:
 configSpace = makeParamSet(
   makeDiscreteParam(id = "optimizer", values = c("sgd", "rmsprop", "adam", "adagrad")),
   makeNumericParam(id = "learning.rate", lower = 0.001, upper = 0.1),
@@ -312,7 +322,7 @@ configSpace = makeParamSet(
 
 \vspace{10pt}
 
-### 2: the sampling function
+### 2.2: the sampling function
 
 Now we need a function to sample configurations from our search space.
 
@@ -320,24 +330,25 @@ Now we need a function to sample configurations from our search space.
 
 ```{r, echo = TRUE}
 sample.fun = function(par.set, n.configs, ...) {
-  # sample from the par.set and remove all NAs
+  # Sample from the par.set and remove all NAs.
   lapply(sampleValues(par = par.set, n = n.configs), function(x) x[!is.na(x)])
 }
 ```
 
 \vspace{10pt}
 
-### 3: the initialization function
+### 2.3: the initialization function
+
+This function initializes a convolutional neural network with two conv layers as well as two dense layers. Note that we define layers = 3, the second dense layer is our output and will be automatically created by mlr. We decide to choose epochs as resources. Thus, when initializing the model, we allocate **r** resources or **r** epochs.
 
 \vspace{10pt}
 
 ```{r, echo = TRUE}
 init.fun = function(r, config, problem) {
+  # We begin and create a learner.
   lrn = makeLearner("classif.mxff",
-    # you may have to install mxnet gpu, else just set ctx = mx.cpu()
+    # You have to install the gpu version of mxnet in order to run this code.
     ctx = mx.gpu(),
-    # we define a small CNN architecture with two conv and two dense layers
-    # (the second dense layer is our output and will be automatically created by mlr)
     layers = 3, 
     conv.layer1 = TRUE, conv.layer2 = TRUE,
     conv.data.shape = c(28, 28),
@@ -347,11 +358,11 @@ init.fun = function(r, config, problem) {
     conv.kernel2 = c(3,3), conv.stride2 = c(1,1), 
     pool.kernel2 = c(2,2), pool.stride2 = c(2,2),           
     array.batch.size = 128,
-    # we initialize our model with r iterations
     begin.round = 1, num.round = r,
-    # here we allocate the configuration from our sample function
+    # This line is very important: here we allocate the configuration to our model.
     par.vals = config
   )
+  # This will start the actual training (initialization) of the model.
   mod = train(learner = lrn, task = problem$data, subset = problem$train)
   return(mod)
 }
@@ -359,16 +370,18 @@ init.fun = function(r, config, problem) {
 
 \vspace{10pt}
 
-### 4: the training function
+### 2.4: the training function
+
+That function will take the initialized model and continues the training process. To this, most importantly, we have to extract the weights from our initialized model and assign them to a new learner.
 
 \vspace{10pt}
 
 ```{r, echo = TRUE}
 train.fun = function(mod, budget, problem) {
-  # we create a new learner and assign all parameters from our model
+  # We create a new learner and assign all hyperparameters from our initialized model.
   lrn = makeLearner("classif.mxff", ctx = mx.gpu(), par.vals = mod$learner$par.vals)
   lrn = setHyperPars(lrn,
-    # in addition, we have to extract the weights and feed them into our new model 
+    # In addition, we have to extract the weights and feed them into our new model .
     symbol = mod$learner.model$symbol,
     arg.params = mod$learner.model$arg.params,
     aux.params = mod$learner.model$aux.params,
@@ -382,36 +395,43 @@ train.fun = function(mod, budget, problem) {
 
 \vspace{10pt}
 
-### 5: the performance function
+### 2.5: the performance function
+
+The performance function will simply predict the validation data at each step of successive halving.
 
 \vspace{10pt}
 
 ```{r, echo = TRUE}
 performance.fun = function(model, problem) {
   pred = predict(model, task = problem$data, subset = problem$val)
-  # we choose accuracy as our performance measure
+  # We choose accuracy as our performance measure.
   performance(pred, measures = acc)
 }
 ```
 
-## call hyperband
+\vspace{10pt}
+
+### 2.6: call hyperband
+
+Now we can call hyperband (this needs around 5 minutes on a GTX 1070).
 
 \vspace{10pt}
 
 ```{r, echo = TRUE, eval = TRUE}
 hyperhyper = hyperband(
   problem = problem,
-  max.ressources = 81, 
+  max.resources = 81, 
   prop.discard = 3,
   max.perf = TRUE,
-  id = "nnet", 
+  id = "CNN", 
   par.set = configSpace, 
   sample.fun =  sample.fun,
+  init.fun = init.fun,
   train.fun = train.fun, 
   performance.fun = performance.fun)
 ```
 
-With max.ressources = 81 and prop.discard = 3, we obtain a total of 5 brackets
+With max.resources = 81 and prop.discard = 3, we obtain a total of 5 brackets:
 
 \vspace{10pt}
 
@@ -431,7 +451,7 @@ hyperhyper[[1]]
 
 \vspace{10pt}
 
-.. and for instance check it's performance by calling the getPerformance() method
+.. and for instance check it's performance by calling the getPerformance() method:
 
 \vspace{10pt}
 
@@ -441,7 +461,7 @@ hyperhyper[[1]]$getPerformances()
 
 \vspace{10pt}
 
-We can also inspect the architecture of the best model of bracket 1
+We can also inspect the architecture of the best model of bracket 1:
 
 \vspace{10pt}
 
@@ -451,7 +471,7 @@ hyperhyper[[1]]$models[[1]]$model
 
 \vspace{10pt}
 
-Now let's see which bracket yields the best performance
+Now let's see which bracket yielded the best performance:
 
 \vspace{10pt}
 
@@ -461,7 +481,7 @@ lapply(hyperhyper, function(x) x$getPerformances())
 
 \vspace{10pt}
 
-We can call the hyperVis function to visualize all brackets
+We can call the hyperVis function to visualize all brackets:
 
 \vspace{10pt}
 
@@ -471,33 +491,36 @@ hyperVis(hyperhyper)
 
 \vspace{10pt}
 
-Now it's time to use the best model and predict test data
+Let us use the best model over all brackets and predict the test data:
 
 \vspace{10pt}
 
 ```{r, echo = TRUE, eval = TRUE}
+# Extract the best model:
 best.mod.index = which.max(unlist(lapply(hyperhyper, function(x) x$getPerformances())))
 best.mod = hyperhyper[[best.mod.index]]$models[[1]]$model
 
+# Predict the test data:
 performance(predict(object = best.mod, task = problem$data, subset = problem$test), 
             measures = acc)
-
 ```
 
 \vspace{10pt}
+
+### 2.7: additional features
 
 The hyperbandr package can also compute single bracket objects.
 For demonstration purposes we shrink our hyperparameter search space.
 Computing single bracket objects requires us to input some new parameters:
 
-* **s**: the s'th bracket we would like to compute
-* **B**: the (approximate) total amount of ressources that should be spend in that bracket
-    + the formula from the hyperband paper to compute B is B = (sMax + 1) * max.ressources 
+* **s**: the s'th bracket which we would like to compute
+* **B**: the (approximate) total amount of resources, that will be spend in that bracket
+    + the formula from the hyperband paper to compute B is B = (sMax + 1) * max.resources 
 
 \vspace{10pt}
 
-```{r, echo = FALSE, eval = TRUE}
-# smaller config space for demonstration purposes
+```{r, echo = TRUE, eval = TRUE}
+# Smaller config space for demonstration purposes.
 configSpace = makeParamSet(
   makeDiscreteParam(id = "optimizer", values = c("sgd", "adam")),
   makeNumericParam(id = "learning.rate", lower = 0.001, upper = 0.1),
@@ -508,13 +531,14 @@ configSpace = makeParamSet(
 brack = bracket$new(
   problem = problem,
   max.perf = TRUE,
-  max.ressources = 81,
+  max.resources = 81,
   prop.discard = 3,
   s = 4,
   B = (4 + 1)*81,
   id = "nnet_bracket",
   par.set = configSpace,
   sample.fun = sample.fun,
+  init.fun = init.fun,
   train.fun = train.fun,
   performance.fun = performance.fun)
 ```
@@ -526,12 +550,22 @@ Each bracket object has a bracket storage object which is basically just another
 \vspace{10pt}
 
 ```{r, echo = FALSE, eval = TRUE}
-brack$bracket.storage$data.matrix
+# Currently, our bracket storage data matrix has 81 configurations (rows)
+dim(brack$bracket.storage$data.matrix)
 ```
 
 \vspace{10pt}
 
-We can complete the bracket by calling the run() method. That means we conduct successive halving according to the rules described in the hyperband paper until only one configuration is left.
+
+
+```{r, echo = FALSE, eval = TRUE}
+# Print the first 10 configurations:
+brack$bracket.storage$data.matrix[1:10,]
+```
+
+\vspace{10pt}
+
+We call the step() method to conduct one round of successive halving. Or just complete the bracket by calling the run() method. That means we conduct successive halving according to the rules described in the hyperband paper until only one configuration is left.
 
 \vspace{10pt}
 
@@ -545,8 +579,9 @@ While we call the run() method, we continuously write new lines to our bracket s
 
 \vspace{10pt}
 
-```{r, echo = TRUE, eval = TRUE}
-brack$bracket.storage$data.matrix
+```{r, echo = FALSE, eval = TRUE}
+# Now, our bracket storage data matrix has 121 rows
+dim(brack$bracket.storage$data.matrix)
 ```
 
 \vspace{10pt}
@@ -555,7 +590,7 @@ Bracket objects have a visPerformances() method to immediately visualize the bra
 
 \vspace{10pt}
 
-```{r, echo = TRUE, eval = TRUE}
+```{r, echo = TRUE, eval = TRUE, fig.height = 4, fig.width = 6}
 brack$visPerformances()
 ```
 
@@ -591,12 +626,13 @@ obj = algorithm$new(
 
 \vspace{10pt}
 
-We can inspect architecture of our algorithm object by calling model
+We can inspect architecture of our algorithm object by calling configuration:
 
 \vspace{10pt}
 
 ```{r, echo = TRUE, eval = TRUE}
-obj$model
+# You can also call obj$model for much more details, but that would not fit on the page.
+obj$configuration
 ```
 
 \vspace{10pt}
@@ -621,7 +657,7 @@ obj$getPerformance()
 
 \vspace{10pt}
 
-By calling the continue() method, we can continue trraining our algorithm object by an arbitrary amount of iterations.
+By calling the continue() method, we can continue training our algorithm object by an arbitrary amount of budget (here: epochs).
 
 \vspace{10pt}
 
@@ -631,7 +667,7 @@ obj$continue(1)
 
 \vspace{10pt}
 
-Like before, in each step we write new lines to our algorithm object.
+Like before, in each step we write new lines to our algorithm object. That enables us so track the behaviour of our algorithm object when allocating more resources.
 
 \vspace{10pt}
 
@@ -651,7 +687,7 @@ invisible(capture.output(replicate(18, obj$continue(1))))
 
 \vspace{10pt}
 
-This will write 18 additional lines to our algorithm storage.
+This will write 18 additional lines to our algorithm storage:
 
 \vspace{10pt}
 
@@ -661,11 +697,11 @@ obj$algorithm.result$data.matrix
 
 \vspace{10pt}
 
-To visualize the training process and the development of our validation error we simply call the visPerformce() method
+To visualize the training process and the development of our validation error, we simply call the visPerformance() method:
 
 \vspace{10pt}
 
-```{r, echo = TRUE, eval = TRUE}
+```{r, echo = TRUE, eval = TRUE, fig.height = 4, fig.width = 6}
 obj$visPerformance()
 ```
 
@@ -751,12 +787,13 @@ Now we simply run hyperband with the new sampling function
 ```{r, echo = TRUE, eval = TRUE}
 hyperhyperMBO = hyperband(
   problem = problem, 
-  max.ressources = 81, 
+  max.resources = 81, 
   prop.discard = 3,  
   max.perf = TRUE,
-  id = "nnet", 
+  id = "CNN", 
   par.set = configSpace, 
   sample.fun =  sample.fun.mbo,
+  init.fun = init.fun,
   train.fun = train.fun, 
   performance.fun = performance.fun)
 ```
@@ -778,7 +815,7 @@ grid.arrange(hyperPlotOne, hyperPlotTwo, ncol = 1, nrow = 2)
 
 \vspace{10pt}
 
-we see blabla, lets do this
+text
 
 \vspace{10pt}
 
@@ -793,7 +830,7 @@ rownames(results) = c("bracket 4", "bracket 3", "bracket 2", "bracket 1", "brack
 
 \vspace{10pt}
 
-kkkk
+text
 
 \newpage
 ## 4. Example 3: hyperband to optimize a **gradient boosting** model with [xgboost](https://github.com/dmlc/xgboost/tree/master/R-package) and [mlr](https://github.com/mlr-org/mlr)
@@ -821,7 +858,7 @@ rm(test.set)
 
 \vspace{10pt}
 
-we see blabla, lets do this
+text
 
 \vspace{10pt}
 
@@ -835,7 +872,7 @@ configSpace = makeParamSet(
 
 \vspace{10pt}
 
-we see blabla, lets do this
+text
 
 \vspace{10pt}
 
@@ -847,7 +884,7 @@ sample.fun = function(par.set, n.configs, ...) {
 
 \vspace{10pt}
 
-we see blabla, lets do this
+text
 
 \vspace{10pt}
 
@@ -861,7 +898,7 @@ init.fun = function(r, config, problem) {
 
 \vspace{10pt}
 
-we see blabla, lets do this
+text
 
 \vspace{10pt}
 
@@ -876,7 +913,7 @@ train.fun = function(mod, budget, problem) {
 
 \vspace{10pt}
 
-we see blabla, lets do this
+text
 
 \vspace{10pt}
 
@@ -888,26 +925,27 @@ performance.fun = function(model, problem) {
 
 \vspace{10pt}
 
-we see blabla, lets do this
+text
 
 \vspace{10pt}
 
-```{r, echo = TRUE}
+```{r, echo = TRUE, warning = FALSE, message = FALSE}
 hyperhyper = hyperband(
   problem = problem,
-  max.ressources = 81, 
+  max.resources = 81, 
   prop.discard = 3,  
   max.perf = FALSE,
   id = "xgboost", 
   par.set = configSpace, 
   sample.fun =  sample.fun,
+  init.fun = init.fun,
   train.fun = train.fun, 
   performance.fun = performance.fun)
 ```
 
 \vspace{10pt}
 
-we see blabla, lets do this
+text
 
 \vspace{10pt}
 
@@ -917,7 +955,7 @@ hyperVis(hyperhyper)
 
 \vspace{10pt}
 
-we see blabla, lets do this
+text
 
 \vspace{10pt}
 
@@ -935,7 +973,7 @@ braninProb = makeBraninFunction()
 
 \vspace{10pt}
 
-we see blabla, lets do this
+text
 
 \vspace{10pt}
 
@@ -951,7 +989,7 @@ getParamSet(braninProb)
 
 \vspace{10pt}
 
-we see blabla, lets do this
+text
 
 \vspace{10pt}
 
@@ -962,7 +1000,7 @@ configSpace = makeParamSet(
 
 \vspace{10pt}
 
-we see blabla, lets do this
+text
 
 \vspace{10pt}
 ```{r, echo = TRUE}
@@ -973,7 +1011,7 @@ sample.fun = function(par.set, n.configs, ...) {
 
 \vspace{10pt}
 
-we see blabla, lets do this
+text
 
 \vspace{10pt}
 ```{r, echo = TRUE}
@@ -987,7 +1025,7 @@ init.fun = function(r, config, problem) {
 
 \vspace{10pt}
 
-we see blabla, lets do this
+text
 
 \vspace{10pt}
 ```{r, echo = TRUE}
@@ -1003,7 +1041,7 @@ train.fun = function(mod, budget, problem) {
 
 \vspace{10pt}
 
-we see blabla, lets do this
+text
 
 \vspace{10pt}
 ```{r, echo = TRUE}
@@ -1014,25 +1052,26 @@ performance.fun = function(model, problem) {
 
 \vspace{10pt}
 
-we see blabla, lets do this
+text
 
 \vspace{10pt}
 ```{r, echo = TRUE}
 hyperhyper = hyperband(
   problem = braninProb,
-  max.ressources = 81, 
+  max.resources = 81, 
   prop.discard = 3,  
   max.perf = FALSE,
   id = "branin", 
   par.set = configSpace, 
   sample.fun =  sample.fun,
+  init.fun = init.fun,
   train.fun = train.fun, 
   performance.fun = performance.fun)
 ```
 
 \vspace{10pt}
 
-we see blabla, lets do this
+text
 
 ```{r, echo = TRUE}
 hyperVis(hyperhyper)
@@ -1040,7 +1079,7 @@ hyperVis(hyperhyper)
 
 \vspace{10pt}
 
-we see blabla, lets do this
+text
 
 \vspace{10pt}
 
@@ -1050,7 +1089,7 @@ lapply(hyperhyper, function(x) x$getPerformances())
 
 \vspace{10pt}
 
-we see blabla, lets do this
+text
 
 \vspace{10pt}
 ```{r, echo = TRUE}
@@ -1077,7 +1116,7 @@ colnames(data) = c("x1", "x2")
 
 \vspace{10pt}
 
-we see blabla, lets do this
+text
 
 \vspace{10pt}
 
