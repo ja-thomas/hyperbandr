@@ -2,16 +2,16 @@
 hyperband in R6
 ===============
 
-### This is a very generic R6 implementation of the hyperband algorithm for hyperparameter optimization (<https://arxiv.org/pdf/1603.06560.pdf>)
+This is a very generic R6 implementation of the hyperband algorithm for hyperparameter optimization (<https://arxiv.org/pdf/1603.06560.pdf>)
 
-### The project is not yet finished but can already be used on your own problems and should work with any other R package/algorithm as long as it is suitable for hyperband.
+The project is not yet finished but can already be used on your own problems and should work with any other R package/algorithm as long as it is suitable for hyperband.
 
 ### Please check the vignette folder for a very in-depth explanation + exhaustive examples on how to use the package and in particular, how to exploit the R6 class system in order to combine hyperband with MBO.
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------
 
-### Let us use **hyperbandr** in order to tune the hyperparameters of a neural network on the famous MNIST data (LeCun & Cortes 2010).
+Let us use **hyperbandr** in order to tune the hyperparameters of a neural network on the famous MNIST data (LeCun & Cortes 2010).
 
 To this, we use [mxnet](https://github.com/apache/incubator-mxnet/tree/master/R-package) and [mlr](https://github.com/mlr-org/mlr).
 
