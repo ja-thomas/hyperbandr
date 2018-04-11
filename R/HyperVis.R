@@ -9,6 +9,9 @@
 #' The number of rows to present the brackets. Default is 1.
 #' @param nrow [\code{integer()}]\cr
 #' The number of columns to present the brackets. Default is length(hyper.object).
+#' @param perfLimits [\code{vector of integers()}]\cr
+#' Vector representing the lower and upper limit of the y-axis (performance). 
+#' Default: hyperVis tries to automatically determine the upper and lower limits.
 #'
 #' @return ggplot2 object
 #' @export
@@ -73,22 +76,22 @@
 #' hyperVis(hyperhyper)
 
 
-hyperVis = function(hyper.object, rows = 1, cols = length(hyper.object)) {
+hyperVis = function(hyper.object, rows = 1, cols = length(hyper.object),
   ## get lower limit ( = floor(min observed performance over all brackets))
-  perfLowerLim = floor(min(unlist(lapply(hyper.object,
-    function(x) min(x$bracket.storage$data.matrix$y)))))
+  perfLimits = c(floor(min(unlist(lapply(hyper.object,
+    function(x) min(x$bracket.storage$data.matrix$y))))),
   ## get upper limit:
   # if ceiling(max observed performance)  = 1  => round one digit
   # if ceiling(max observed performance) != 1  => use ceiling
-  perfUpperLim = ifelse(ceiling(max(unlist(lapply(hyper.object,
-      function(x) max(x$bracket.storage$data.matrix$y))))) == 1, 
-    round(max(unlist(lapply(hyper.object, 
-      function(x) max(x$bracket.storage$data.matrix$y)))), digits = 2),
-    ceiling(max(unlist(lapply(hyper.object,
-      function(x) max(x$bracket.storage$data.matrix$y))))))
-  # plot list
+  ifelse(ceiling(max(unlist(lapply(hyper.object,
+    function(x) max(x$bracket.storage$data.matrix$y))))) == 1,
+  round(max(unlist(lapply(hyper.object, 
+    function(x) max(x$bracket.storage$data.matrix$y)))), digits = 2),
+  ceiling(max(unlist(lapply(hyper.object,
+    function(x) max(x$bracket.storage$data.matrix$y)))))))) {
+  # create plot list
   plotList = lapply(hyper.object, 
-    function(x) x$visPerformances(make.labs = FALSE, limits = c(perfLowerLim, perfUpperLim)))
+    function(x) x$visPerformances(make.labs = FALSE, limits = perfLimits))
   # plot brackets in
   do.call("grid.arrange", c(plotList, ncol = cols, bottom = "budget", left = "performance"))
 }

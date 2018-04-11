@@ -2,12 +2,13 @@
 ############## packages ###############
 #######################################
 
+# main packages
 library("devtools")
-load_all()
 library("mlr")
 library("mlrMBO")
-library("rgenoud")
+library("rgenoud") # mlrMBO requires rgenoud for its surrogate model
 library("smoof")
+# helper packages
 library("ggplot2")
 library("data.table")
 library("dplyr")
@@ -40,7 +41,7 @@ configSpace = makeParamSet(
     makeNumericParam(id = "x1", lower = -5, upper = 10.1))
 
 # sample fun 
-sample.fun = function(par.set, n.configs, hyper.storage) {
+sample.fun.mbo = function(par.set, n.configs, hyper.storage) {
   # sample from configSpace
   if (dim(hyper.storage)[[1]] == 0) {
     lapply(sampleValues(par = par.set, n = n.configs), function(x) x[!is.na(x)])
@@ -101,8 +102,9 @@ hyperhyperMBO = hyperband(
   prop.discard = 3,  
   max.perf = FALSE,
   id = "branin_MBO",
-  par.set = configSpace, 
-  sample.fun =  sample.fun,
+  par.set = configSpace,
+  sample.fun =  sample.fun.mbo,
+  init.fun = init.fun,
   train.fun = train.fun, 
   performance.fun = performance.fun)
 

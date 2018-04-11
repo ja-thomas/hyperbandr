@@ -2,16 +2,17 @@
 ############## packages ###############
 #######################################
 
-setwd("C:/Users/Niklas/hyperbandr")
+# main packages
 library("devtools")
-load_all()
-library("mxnet") 
-library("mlr") # you might need to install mxnet branch of mlr: devtools::install_github("mlr-org/mlr", ref = "mxnet")
+library("mlr") # 04/2018: you need to install the mxnet branch of mlr: devtools::install_github("mlr-org/mlr", ref = "mxnet")
 library("mlrMBO")
+library("ranger") # mlrMBO requires ranger for its surrogate model
+library("mxnet") 
+# helper packages
 library("ggplot2")
+library("data.table")
 library("gridExtra")
 library("dplyr")
-library("data.table")
 
 
 ####################################
@@ -137,14 +138,15 @@ hyperhyperMBO = hyperband(
   max.resources = 81, 
   prop.discard = 3,  
   max.perf = TRUE,
-  id = "nnet", 
+  id = "cnn_MBO", 
   par.set = configSpace, 
   sample.fun =  sample.fun.mbo,
+  init.fun = init.fun,
   train.fun = train.fun, 
   performance.fun = performance.fun)
 
 # visualize the brackets
-hyperVis(hyperhyperMBO)
+hyperVis(hyperhyperMBO, perfLimits = c(0, 1))
 # get the best performance of each bracket
 max(unlist(lapply(hyperhyperMBO, function(x) x$getPerformances())))
 # get the architecture of the best bracket

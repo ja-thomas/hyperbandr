@@ -2,16 +2,17 @@
 ############## packages ###############
 #######################################
 
+# main packages
 library("devtools")
-load_all()
 library("mlr")
 library("mlrMBO")
-library("rgenoud")
+library("rgenoud") # mlrMBO requires rgenoud for its surrogate model
 library("xgboost")
+# helper packages
 library("ggplot2")
-library("gridExtra")
 library("data.table")
 library("dplyr")
+library("gridExtra")
 
 
 #######################################
@@ -38,7 +39,7 @@ configSpace = makeParamSet(
   makeNumericParam("subsample", lower = 0.3, upper = 1, default = 0.6))
 
 # sample fun 
-sample.fun = function(par.set, n.configs, hyper.storage) {
+sample.fun.mbo = function(par.set, n.configs, hyper.storage) {
   # sample from configSpace
   if (dim(hyper.storage)[[1]] == 0) {
     lapply(sampleValues(par = par.set, n = n.configs), function(x) x[!is.na(x)])
@@ -97,7 +98,8 @@ hyperhyperMBO = hyperband(
   max.perf = FALSE,
   id = "xgboost_MBO", 
   par.set = configSpace, 
-  sample.fun =  sample.fun,
+  init.fun = init.fun, 
+  sample.fun =  sample.fun.mbo,
   train.fun = train.fun, 
   performance.fun = performance.fun)
 

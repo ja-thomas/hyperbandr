@@ -2,14 +2,15 @@
 ############## packages ###############
 #######################################
 
+# main packages
 library("devtools")
-load_all()
 library("mlr")
 library("smoof")
+# helper packages
 library("ggplot2")
-library("gridExtra")
-library("dplyr")
 library("data.table")
+library("dplyr")
+library("gridExtra")
 library("ggrepel")
 
 
@@ -103,13 +104,14 @@ obj$visPerformance()
 brack = bracket$new(
   problem = braninProb, 
   max.perf = FALSE,
-  max.resources = 200,
-  prop.discard = 4,
+  max.resources = 81,
+  prop.discard = 3,
   s = 4,
-  B = (4 + 1)*200,
+  B = (4 + 1)*81,
   id = "branin",
   par.set = configSpace,
   sample.fun = sample.fun,
+  init.fun = init.fun,
   train.fun = train.fun,
   performance.fun = performance.fun)
 
@@ -133,6 +135,7 @@ hyperhyper = hyperband(
   id = "branin", 
   par.set = configSpace, 
   sample.fun =  sample.fun,
+  init.fun = init.fun,
   train.fun = train.fun, 
   performance.fun = performance.fun)
 

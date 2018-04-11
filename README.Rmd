@@ -23,7 +23,7 @@ writeLines(capture.output(devtools::session_info()), "session_info.txt")
 
 ### The project is not yet finished but can already be used on your own problems and should work with any other R package/algorithm as long as it is suitable for hyperband.
 
-### Check the vignette folder for a very in-depth explanation + four exhaustive examples on how to use the package.
+## Please check the vignette folder for a very in-depth explanation + exhaustive examples on how to use the package and in particular, how to exploit the R6 class system in order to combine hyperband with MBO.
 
 
 ```{r, echo = FALSE, warning = FALSE, message = FALSE}
@@ -115,7 +115,6 @@ The ParamHelpers package provides an easy way to construct the latter one.
 
 ```{r, echo = TRUE, comment = NA}
 library("ParamHelpers")
-
 configSpace = makeParamSet(
   makeDiscreteParam(id = "optimizer", values = c("sgd", "rmsprop", "adam", "adagrad")),
   makeNumericParam(id = "learning.rate", lower = 0.001, upper = 0.1),
@@ -155,7 +154,7 @@ init.fun = function(r, config, problem) {
     # you may have to install mxnet gpu, else just set ctx = mx.cpu()
     ctx = mx.gpu(),
     # we define a small CNN architecture with two conv and two dense layers
-    # (the second dense layer is our output and will be automatically created by mlr)
+    # (the second dense layer is our output and will be created automatically by mlr)
     layers = 3, 
     conv.layer1 = TRUE, conv.layer2 = TRUE,
     conv.data.shape = c(28, 28),
@@ -177,7 +176,9 @@ init.fun = function(r, config, problem) {
 
 \vspace{10pt}
 
-.. and a function to continue the training of our model ..
+After each step of successive halving, hyperbandr continues training the remaining model instead of training from scratch. This will greatly speed training time. Thus, we need a function to continue the training of our models ..
+
+We're planning to add training from scratch as well. That might be necessary if the architecture memory requirements become to big. 
 
 \vspace{10pt}
 
@@ -206,6 +207,7 @@ train.fun = function(mod, budget, problem) {
 
 ```{r, echo = TRUE}
 performance.fun = function(model, problem) {
+  # predict the validation data
   pred = predict(model, task = problem$data, subset = problem$val)
   # we choose accuracy as our performance measure
   performance(pred, measures = acc)
@@ -214,7 +216,7 @@ performance.fun = function(model, problem) {
 
 \vspace{10pt}
 
-Now we can call hyperband
+Now we can call hyperband (with these hyperparameters, one run needs like 5 minutes on a GTX 1070):
 
 \vspace{10pt}
 
@@ -227,13 +229,14 @@ hyperhyper = hyperband(
   id = "nnet", 
   par.set = configSpace, 
   sample.fun =  sample.fun,
+  init.fun = init.fun,
   train.fun = train.fun, 
   performance.fun = performance.fun)
 ```
 
 \vspace{10pt}
 
-With max.resources = 81 and prop.discard = 3, we obtain a total of 5 brackets
+With max.resources = 81 and prop.discard = 3, we obtain a total of 5 brackets:
 
 \vspace{10pt}
 
@@ -253,7 +256,7 @@ hyperhyper[[1]]
 
 \vspace{10pt}
 
-.. and for instance check it's performance by calling the getPerformance() method
+.. and for instance check it's performance by calling the getPerformance() method:
 
 \vspace{10pt}
 
@@ -263,7 +266,7 @@ hyperhyper[[1]]$getPerformances()
 
 \vspace{10pt}
 
-We can also inspect the architecture of the best model of bracket 1
+We can also inspect the architecture of the best model of bracket 1:
 
 \vspace{10pt}
 
@@ -273,7 +276,7 @@ hyperhyper[[1]]$models[[1]]$model
 
 \vspace{10pt}
 
-Now let's see which bracket yields the best performance
+Let's see which bracket yielded the best performance:
 
 \vspace{10pt}
 
@@ -283,17 +286,17 @@ lapply(hyperhyper, function(x) x$getPerformances())
 
 \vspace{10pt}
 
-We can call the hyperVis function to visualize all brackets
+We can call the hyperVis function to visualize all brackets:
 
 \vspace{10pt}
 
 ```{r, echo = TRUE, eval = TRUE, warning = FALSE, message = FALSE}
-hyperVis(hyperhyper)
+hyperVis(hyperhyper, perfLimits = c(0, 1))
 ```
 
 \vspace{10pt}
 
-Now it's time to use the best model and predict test data
+Now we use the best model and predict test data:
 
 \vspace{10pt}
 
@@ -308,7 +311,7 @@ performance(predict(object = best.mod, task = problem$data, subset = problem$tes
 
 \vspace{10pt}
 
-### Furthermore, the example folder contains eight detailed examples: 
+### The example folder contains six detailed examples: 
 
 * neural networks:
     + hyperband to tune hyperparameters with mxnet and mlr
@@ -319,3 +322,4 @@ performance(predict(object = best.mod, task = problem$data, subset = problem$tes
 * single- and multi-objective functions:
     + hyperband to tune hyperparameters with smoof and mlr
     + combine hyperband and MBO to tunehyperparameters with smoof mlr and mlrMBO
+    

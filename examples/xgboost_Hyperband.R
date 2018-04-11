@@ -2,13 +2,15 @@
 ############## packages ###############
 #######################################
 
+# main packages
 library("devtools")
-load_all()
 library("mlr")
 library("xgboost")
+# helper packages
 library("ggplot2")
-library("gridExtra")
+library("data.table")
 library("dplyr")
+library("gridExtra")
 
 
 #######################################
@@ -104,6 +106,7 @@ brack = bracket$new(
   id = "xgboost",
   par.set = configSpace,
   sample.fun = sample.fun,
+  init.fun = init.fun,
   train.fun = train.fun,
   performance.fun = performance.fun)
 
@@ -127,6 +130,7 @@ hyperhyper = hyperband(
   id = "xgboost", 
   par.set = configSpace, 
   sample.fun =  sample.fun,
+  init.fun = init.fun,
   train.fun = train.fun, 
   performance.fun = performance.fun)
 

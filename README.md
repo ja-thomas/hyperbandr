@@ -2,19 +2,20 @@
 hyperband in R6
 ===============
 
-This is a very generic R6 implementation of the hyperband algorithm for hyperparameter optimization (<https://arxiv.org/pdf/1603.06560.pdf>)
+### This is a very generic R6 implementation of the hyperband algorithm for hyperparameter optimization (<https://arxiv.org/pdf/1603.06560.pdf>)
 
-The project is not yet finished but can already be used on your own problems and should work with any other R package/algorithm as long as it is suitable for hyperband.
+### The project is not yet finished but can already be used on your own problems and should work with any other R package/algorithm as long as it is suitable for hyperband.
 
-Check the vignette folder for a very in-depth explanation + four exhaustive examples on how to use the package.
+### Please check the vignette folder for a very in-depth explanation + exhaustive examples on how to use the package and in particular, how to exploit the R6 class system in order to combine hyperband with MBO.
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------
 
-Let us use **hyperbandr** in order to tune the hyperparameters of a neural network on the famous MNIST data (LeCun & Cortes 2010).
+### Let us use **hyperbandr** in order to tune the hyperparameters of a neural network on the famous MNIST data (LeCun & Cortes 2010).
 
 To this, we use [mxnet](https://github.com/apache/incubator-mxnet/tree/master/R-package) and [mlr](https://github.com/mlr-org/mlr).
 
-![](images/MNIST.png)
+![](README-unnamed-chunk-4-1.png)
 
 For convenience, we only use 1/10 of the original data.
 
@@ -31,13 +32,13 @@ test.set = setdiff(1:nrow(mnist), c(train.set, val.set))
 # Since we use mlr, we define a classification task to encapsulate the data
 task = makeClassifTask(data = mnist, target = "label")
 
-# Finally, we define a problem list which incorporates the data and the subsampling rule
+# Finally, we define the problem list
 problem = list(data = task, train = train.set, val = val.set, test = test.set)
 ```
 
-At first we define a search space. 
+At first we define a search space. The ParamHelpers package provides an easy way to construct the latter one.
+
 ``` r
-# The ParamHelpers package provides an easy way to construct the latter one.
 library("ParamHelpers")
 configSpace = makeParamSet(
   makeDiscreteParam(id = "optimizer", values = c("sgd", "rmsprop", "adam", "adagrad")),
@@ -90,7 +91,9 @@ init.fun = function(r, config, problem) {
 }
 ```
 
-.. and a function to continue the training of our model ..
+After each step of successive halving, hyperbandr continues training the remaining model instead of training from scratch. This will greatly speed training time. Thus, we need a function to continue the training of our models ..
+
+We're planning to add training from scratch as well. That might be necessary if the architecture memory requirements become to big.
 
 ``` r
 train.fun = function(mod, budget, problem) {
@@ -113,13 +116,14 @@ train.fun = function(mod, budget, problem) {
 
 ``` r
 performance.fun = function(model, problem) {
+  # predict the validation data
   pred = predict(model, task = problem$data, subset = problem$val)
   # we choose accuracy as our performance measure
   performance(pred, measures = acc)
 }
 ```
 
-Now we can call hyperband (this needs like 5 minuten on a GTX1070)
+Now we can call hyperband (with these hyperparameters, one run needs like 5 minutes on a GTX 1070):
 
 ``` r
 hyperhyper = hyperband(
@@ -130,6 +134,7 @@ hyperhyper = hyperband(
   id = "nnet", 
   par.set = configSpace, 
   sample.fun =  sample.fun,
+  init.fun = init.fun,
   train.fun = train.fun, 
   performance.fun = performance.fun)
 #> Beginning with bracket 4
@@ -154,7 +159,7 @@ hyperhyper = hyperband(
 #> Iteration 0, with 1 Algorithms left (Budget: 81)
 ```
 
-With max.resources = 81 and prop.discard = 3, we obtain a total of 5 brackets
+With max.resources = 81 and prop.discard = 3, we obtain a total of 5 brackets:
 
 ``` r
 length(hyperhyper)
@@ -195,51 +200,51 @@ hyperhyper[[1]]
 #>     visPerformances: function (make.labs = TRUE, ...)
 ```
 
-.. and for instance check it's performance by calling the getPerformance() method
+.. and for instance check it's performance by calling the getPerformance() method:
 
 ``` r
 hyperhyper[[1]]$getPerformances()
-#> [1] 0.98
+#> [1] 0.973
 ```
 
-We can also inspect the architecture of the best model of bracket 1
+We can also inspect the architecture of the best model of bracket 1:
 
 ``` r
 hyperhyper[[1]]$models[[1]]$model
 #> Model for learner.id=classif.mxff; learner.class=classif.mxff
 #> Trained on: task.id = mnist; obs = 4000; features = 784
-#> Hyperparameters: learning.rate=0.0553,array.layout=rowmajor,verbose=FALSE,optimizer=adagrad,wd=0.00554,dropout.input=0.104,dropout.layer1=0.351,dropout.layer2=0.353,dropout.layer3=0.362,batch.normalization1=FALSE,batch.normalization2=FALSE,batch.normalization3=TRUE,ctx=<MXContext>,layers=3,conv.layer1=TRUE,conv.layer2=TRUE,conv.data.shape=28,28,num.layer1=8,num.layer2=16,num.layer3=64,conv.kernel1=3,3,conv.stride1=1,1,pool.kernel1=2,2,pool.stride1=2,2,conv.kernel2=3,3,conv.stride2=1,1,pool.kernel2=2,2,pool.stride2=2,2,array.batch.size=128,begin.round=28,num.round=54,symbol=<Rcpp_MXSymbol>,arg.params=<list>,aux.params=<list>
+#> Hyperparameters: learning.rate=0.0504,array.layout=rowmajor,verbose=FALSE,optimizer=adagrad,wd=0.00229,dropout.input=0.0428,dropout.layer1=0.0317,dropout.layer2=0.183,dropout.layer3=0.392,batch.normalization1=FALSE,batch.normalization2=FALSE,batch.normalization3=TRUE,ctx=<MXContext>,layers=3,conv.layer1=TRUE,conv.layer2=TRUE,conv.data.shape=28,28,num.layer1=8,num.layer2=16,num.layer3=64,conv.kernel1=3,3,conv.stride1=1,1,pool.kernel1=2,2,pool.stride1=2,2,conv.kernel2=3,3,conv.stride2=1,1,pool.kernel2=2,2,pool.stride2=2,2,array.batch.size=128,begin.round=28,num.round=54,symbol=<Rcpp_MXSymbol>,arg.params=<list>,aux.params=<list>
 ```
 
-Now let's see which bracket yields the best performance
+Let's see which bracket yielded the best performance:
 
 ``` r
 lapply(hyperhyper, function(x) x$getPerformances())
 #> [[1]]
-#> [1] 0.98
+#> [1] 0.973
 #> 
 #> [[2]]
-#> [1] 0.976
+#> [1] 0.963
 #> 
 #> [[3]]
-#> [1] 0.965
+#> [1] 0.947
 #> 
 #> [[4]]
-#> [1] 0.962
+#> [1] 0.96
 #> 
 #> [[5]]
-#> [1] 0.956
+#> [1] 0.961
 ```
 
-We can call the hyperVis function to visualize all brackets
+We can call the hyperVis function to visualize all brackets:
 
 ``` r
-hyperVis(hyperhyper)
+hyperVis(hyperhyper, perfLimits = c(0, 1))
 ```
 
-![](images/hyperVis.png)
+![](README-unnamed-chunk-17-1.png)
 
-Now we use the best model and predict test data
+Now we use the best model and predict test data:
 
 ``` r
 best.mod.index = which.max(unlist(lapply(hyperhyper, function(x) x$getPerformances())))
@@ -247,11 +252,11 @@ best.mod = hyperhyper[[best.mod.index]]$models[[1]]$model
 
 performance(predict(object = best.mod, task = problem$data, subset = problem$test), 
             measures = acc)
-#>  acc 
-#> 0.97
+#>   acc 
+#> 0.982
 ```
 
-The example folder contains six detailed examples:
+### The example folder contains six detailed examples:
 
 -   neural networks:
     -   hyperband to tune hyperparameters with mxnet and mlr

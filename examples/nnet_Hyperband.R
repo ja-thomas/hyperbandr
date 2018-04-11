@@ -2,15 +2,15 @@
 ############## packages ###############
 #######################################
 
-setwd("C:/Users/Niklas/hyperbandr")
+# main packages
 library("devtools")
-load_all()
+library("mlr") # as of april 2018, you need to install the mxnet branch of mlr: devtools::install_github("mlr-org/mlr", ref = "mxnet")
 library("mxnet") 
-library("mlr") # you might need to install mxnet branch of mlr: devtools::install_github("mlr-org/mlr", ref = "mxnet")
+# helper packages
 library("ggplot2")
-library("gridExtra")
-library("dplyr")
 library("data.table")
+library("dplyr")
+library("gridExtra")
 
 
 ####################################
@@ -111,7 +111,7 @@ performance.fun = function(model, problem) {
 #### make neural net algorithm object ####
 obj = algorithm$new(
   problem = problem,
-  id = "nnet",
+  id = "cnn",
   configuration = sample.fun(par.set = configSpace, n.configs = 1)[[1]],
   initial.budget = 1,
   init.fun = init.fun,
@@ -145,9 +145,10 @@ brack = bracket$new(
   prop.discard = 3,
   s = 4,
   B = (4 + 1)*81,
-  id = "nnet",
+  id = "cnn",
   par.set = configSpace,
   sample.fun = sample.fun,
+  init.fun = init.fun,
   train.fun = train.fun,
   performance.fun = performance.fun)
 
@@ -168,14 +169,15 @@ hyperhyper = hyperband(
   max.resources = 81, 
   prop.discard = 3,  
   max.perf = TRUE,
-  id = "nnet", 
+  id = "cnn", 
   par.set = configSpace, 
   sample.fun =  sample.fun,
+  init.fun = init.fun,
   train.fun = train.fun, 
   performance.fun = performance.fun)
 
 # visualize the brackets
-hyperVis(hyperhyper)
+hyperVis(hyperhyper, perfLimits = c(0, 1))
 # get the best performance of each bracket
 max(unlist(lapply(hyperhyper, function(x) x$getPerformances())))
 # get the architecture of the best bracket
