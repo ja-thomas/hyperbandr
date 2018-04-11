@@ -15,7 +15,7 @@ Let us use **hyperbandr** in order to tune the hyperparameters of a neural netwo
 
 To this, we use [mxnet](https://github.com/apache/incubator-mxnet/tree/master/R-package) and [mlr](https://github.com/mlr-org/mlr).
 
-![](MNIST.png)
+![](images/MNIST.png)
 
 For convenience, we only use 1/10 of the original data.
 
@@ -242,7 +242,7 @@ We can call the hyperVis function to visualize all brackets:
 hyperVis(hyperhyper, perfLimits = c(0, 1))
 ```
 
-![](hyperVis.png)
+![](images/hyperVis.png)
 
 Now we use the best model and predict test data:
 
