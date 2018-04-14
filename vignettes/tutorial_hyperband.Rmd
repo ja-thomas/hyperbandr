@@ -486,7 +486,7 @@ We can call the hyperVis function to visualize all brackets:
 \vspace{10pt}
 
 ```{r, echo = TRUE, eval = TRUE}
-hyperVis(hyperhyper)
+hyperVis(hyperhyper, perfLimits = c(0, 1))
 ```
 
 \vspace{10pt}
@@ -558,7 +558,7 @@ dim(brack$bracket.storage$data.matrix)
 
 
 
-```{r, echo = FALSE, eval = TRUE}
+```{r, echo = TRUE, eval = TRUE}
 # Print the first 10 configurations:
 brack$bracket.storage$data.matrix[1:10,]
 ```
@@ -579,7 +579,7 @@ While we call the run() method, we continuously write new lines to our bracket s
 
 \vspace{10pt}
 
-```{r, echo = FALSE, eval = TRUE}
+```{r, echo = TRUE, eval = TRUE}
 # Now, our bracket storage data matrix has 121 rows
 dim(brack$bracket.storage$data.matrix)
 ```
@@ -626,7 +626,7 @@ obj = algorithm$new(
 
 \vspace{10pt}
 
-We can inspect architecture of our algorithm object by calling configuration:
+We can inspect the architecture of our algorithm object by calling configuration:
 
 \vspace{10pt}
 
@@ -637,7 +637,7 @@ obj$configuration
 
 \vspace{10pt}
 
-Similar to the bracket object, each algorithm object has a algorithm storage object which is basically just another R6 class. The algorithm storage shows us the hyperparameters, the current budget and the performance in an equation-ish style.
+Similar to the bracket object, each algorithm object has an algorithm storage object which is basically just another R6 class. The algorithm storage shows us the hyperparameters, the current budget and the performance in an equation-ish style.
 
 \vspace{10pt}
 
@@ -667,7 +667,7 @@ obj$continue(1)
 
 \vspace{10pt}
 
-Like before, in each step we write new lines to our algorithm object. That enables us so track the behaviour of our algorithm object when allocating more resources.
+Like before, in each step we write new lines to our algorithm storage. That enables us so track the behaviour of our algorithm object when allocating more resources.
 
 \vspace{10pt}
 
@@ -746,19 +746,23 @@ library("mlrMBO")
 library("ranger")
 
 sample.fun.mbo = function(par.set, n.configs, hyper.storage) {
-  # if the hyper storage is empty, sample from our search space 
+  # If the hyper storage is empty, sample from our search space 
   if (dim(hyper.storage)[[1]] == 0) {
     lapply(sampleValues(par = par.set, n = n.configs), function(x) x[!is.na(x)])
-  # else, propose configurations via MBO
+  # Else, propose configurations via MBO.
+  # That means, we propose configurations for the second bracket based on the
+  # results from bracket one. For bracket three, we propose configurations based
+  # on the results from bracket one and two and so on..
   } else {
     catf("Proposing points")
     ctrl = makeMBOControl(propose.points = n.configs)
-    # set the infill criterion
+    # Set the infill criterion
     ctrl = setMBOControlInfill(ctrl, crit = crit.cb)
     designMBO = data.table(hyper.storage)
-    # we have to keep in mind, that some configurations occur multiple times,
-    # thus we have to aggregate their performance according to some rule:
-    # here we simply do this by electing the best performance that we observe
+    # We have to keep in mind, that some configurations occur multiple times.
+    # Here we choose to aggregate their performance according to a rule.
+    # For each configuration that occurs more than once:
+    # aggregate by electing the best performance.
     designMBO = data.frame(designMBO[, max(y), by = names(configSpace$pars)])
     colnames(designMBO) = colnames(hyper.storage)[-(length(configSpace$pars) + 1)]
     # initSMBO enables us to conduct human-in-the-loop MBO
@@ -768,7 +772,7 @@ sample.fun.mbo = function(par.set, n.configs, hyper.storage) {
       control = ctrl, 
       minimize = FALSE, 
       noisy = FALSE)
-    # based on the surrogate model, proposePoints yields us our configurations
+    # Based on the surrogate model, proposePoints yields us our configurations
     prop = proposePoints(opt.state)
     propPoints = prop$prop.points
     rownames(propPoints) = c()
@@ -805,8 +809,8 @@ Let us compare the results of our vanilla hyperband and the combination of hyper
 \vspace{10pt}
 
 ```{r, echo = FALSE, results = "hide", fig.keep = "none", fig.show = "hide"}
-hyperPlotOne = hyperVis(hyperhyper)
-hyperPlotTwo = hyperVis(hyperhyperMBO)
+hyperPlotOne = hyperVis(hyperhyper, perfLimits = c(0, 1))
+hyperPlotTwo = hyperVis(hyperhyperMBO, perfLimits = c(0, 1))
 ```
 
 ```{r, echo = FALSE}

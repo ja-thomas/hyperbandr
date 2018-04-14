@@ -6,7 +6,7 @@ This is a very generic R6 implementation of the hyperband algorithm for hyperpar
 
 The project is not yet finished but can already be used on your own problems and should work with any other R package/algorithm as long as it is suitable for hyperband.
 
-### Please check the vignette folder for a very in-depth explanation + exhaustive examples on how to use the package and in particular, how to exploit the R6 class system in order to combine hyperband with MBO.
+### Please check the vignette folder for a very in-depth explanation + exhaustive examples, including a "how-to" computing single bracket objects or even combining hyperband with MBO.
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------
@@ -263,7 +263,7 @@ performance(predict(object = best.mod, task = problem$data, subset = problem$tes
     -   combine hyperband and MBO to tunehyperparameters with mxnet, mlr and mlrMBO
 -   gradient boosting:
     -   hyperband to tune hyperparameters with xgboost and mlr
-    -   combine hyperband and MBO to tunehyperparameters with xgboost mlr and mlrMBO
+    -   combine hyperband and MBO to tunehyperparameters with xgboost, mlr and mlrMBO
 -   single- and multi-objective functions:
     -   hyperband to tune hyperparameters with smoof and mlr
-    -   combine hyperband and MBO to tunehyperparameters with smoof mlr and mlrMBO
+    -   combine hyperband and MBO to tunehyperparameters with smoof mlr, and mlrMBO
