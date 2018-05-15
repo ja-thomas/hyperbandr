@@ -3,7 +3,7 @@
 #'
 #' @description
 #' An \code{\link[R6]{R6Class}} to be optimized by hyperband
-#' 
+#'
 #' @field id [\code{string}]\cr
 #' An id for the Algorithm object
 #' @field configuration \cr
@@ -23,39 +23,45 @@
 #' \code{$visPerformance()} visualizes the performance of the model \cr
 #'
 #' @return Algorithm object
-#' @export
 #' @examples
-#' 
+#'
 #' # we need some packages
 #' library("ggplot2")
 #' library("smoof")
 #' library("data.table")
-#' 
-#' # simple example for the branin function, a minimization problem
-#' problem = makeBraninFunction()
-#' opt = data.table(x1 = getGlobalOptimum(problem)$param$x1, x2 = getGlobalOptimum(problem)$param$x2)
-#' # the three red dots are global minima
-#' autoplot(problem) + geom_point(data = opt, aes(x = x1, y = x2), shape = 20, colour = "red", size = 5)
-#' 
+#'
+#' # we choose the 2 dimensional branin function
+#' braninProb = makeBraninFunction()
+#'
+#' # the branin function has 3 global minima
+#' opt = data.table(x1 = getGlobalOptimum(braninProb)$param$x1,
+#'   x2 = getGlobalOptimum(braninProb)$param$x2)
+#' param.set = getParamSet(braninProb)
+#'
+#'
+#' #######################################
+#' ## define functions to use hyperband ##
+#' #######################################
+#'
 #' # config space
 #' configSpace = makeParamSet(
 #'     makeNumericParam(id = "x1", lower = -5, upper = 10.1))
-#' 
+#'
 #' # sample fun
 #' sample.fun = function(par.set, n.configs, ...) {
 #'   sampleValues(par = par.set, n = n.configs)
 #' }
-#' 
+#'
 #' # init fun
-#' init.fun = function(r, config) {
+#' init.fun = function(r, config, problem) {
 #'   x1 = unname(unlist(config))
 #'   x2 = runif(1, 0, 15)
 #'   mod = c(x1, x2)
 #'   return(mod)
 #' }
-#' 
+#'
 #' # train fun
-#' train.fun = function(mod, budget) {
+#' train.fun = function(mod, budget, problem) {
 #'   for(i in seq_len(budget)) {
 #'     mod.new = c(mod[[1]], mod[[2]] + rnorm(1, sd = 3))
 #'     if(performance.fun(mod.new) < performance.fun(mod))
@@ -63,39 +69,46 @@
 #'   }
 #'   return(mod)
 #' }
-#' 
+#'
 #' # performance fun
-#' performance.fun = function(model) {
-#'   problem(c(model[[1]], model[[2]]))
+#' performance.fun = function(model, problem) {
+#'   braninProb(c(model[[1]], model[[2]]))
 #' }
-#' 
-#' ##### make branin algorithm object ####
+#'
+#'
+#' #######################################
+#' ############# applications ############
+#' #######################################
+#'
+#' #### make branin algorithm object ####
 #' obj = algorithm$new(
+#'   problem = braninProb,
 #'   id = "branin",
 #'   configuration = sample.fun(par.set = configSpace, n.configs = 1)[[1]],
-#'   initial.budget = 0,
+#'   initial.budget = 1,
 #'   init.fun = init.fun,
 #'   train.fun = train.fun,
 #'   performance.fun = performance.fun)
-#' 
+#'
 #' # we can inspect model of our algorithm object
 #' obj$model
 #' # the data matrix shows us the hyperparameters, the current budget and the performance
 #' obj$algorithm.result$data.matrix
-#' # if we are only interested in the performance, we can also call the getPerformance method
+#' # if we are interested in the performance, we can also call the getPerformance method
 #' obj$getPerformance()
 #' # we can continue training our object for one iteration by calling
 #' obj$continue(1)
+#' # inspect of the data matrix has changed
+#' obj$algorithm.result$data.matrix
 #' # continue training for 18 iterations to obtain a total of 20 iterations
 #' invisible(capture.output(replicate(18, obj$continue(1))))
 #' # inspect model the model again
 #' obj$model
 #' # inspect the data matrix again
 #' obj$algorithm.result$data.matrix
-#' # let us visualize the validation error development
+#' # we can immediately visualize the performance function
 #' obj$visPerformance()
-
-
+#' @export
 algorithm = R6Class("Algorithm",
   public = list(
     id = NULL,
@@ -114,7 +127,7 @@ algorithm = R6Class("Algorithm",
       self$model = init.fun(initial.budget, configuration, problem)
       self$train.fun = train.fun
       self$performance.fun = performance.fun
-      self$algorithm.result = algorithmStorage$new(self$configuration, self$current.budget, 
+      self$algorithm.result = algorithmStorage$new(self$configuration, self$current.budget,
         self$model, self$performance.fun, self$problem)
     },
     # method to continue training
@@ -122,7 +135,7 @@ algorithm = R6Class("Algorithm",
       self$model = self$train.fun(self$model, budget, self$problem)
       self$current.budget = self$current.budget + budget
       # append the performance to the algorithm storage
-      self$algorithm.result$attachLine(algorithmStorage$new(self$configuration, self$current.budget, 
+      self$algorithm.result$attachLine(algorithmStorage$new(self$configuration, self$current.budget,
         self$model, self$performance.fun, self$problem)$data.matrix)
       invisible(NULL)
     },
@@ -140,7 +153,7 @@ algorithm = R6Class("Algorithm",
         scale_y_continuous(name = "performance") +
         scale_x_continuous(labels = function (x) floor(x), name = "budget") +
         theme(legend.position = "none") +
-        theme_minimal() +  
+        theme_minimal() +
         geom_line(size = 0.5, colour = "cyan3")
       }
     }

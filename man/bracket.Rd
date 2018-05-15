@@ -18,10 +18,10 @@ An \code{\link[R6]{R6Class}} that consits of multiple algorithm objects
 
 \describe{
 \item{\code{max.perf}}{[\code{logical()}]\cr
-TRUE if to maximize the performance (e.g. accuracy of a neural net), 
+TRUE if to maximize the performance (e.g. accuracy of a neural net),
 FALSE if to minimize the performance (e.g. find the minimum of the branin function).}
 
-\item{\code{max.ressources}}{[\code{integer()}]\cr
+\item{\code{max.resources}}{[\code{integer()}]\cr
 The maximum amount of resource that can be allocated to a single configuration}
 
 \item{\code{prop.discard}}{[\code{integer()}]\cr
@@ -29,11 +29,11 @@ An input that controls the proportion of configurations discarded in each round 
 
 \item{\code{s}}{[\code{integer()}]\cr
 The s'th bracket object to create. Note that s is in \cr
-\code{(0,...,floor(log(max.ressources, base = prop.discard)))}}
+\code{(0,...,floor(log(max.resources, base = prop.discard)))}}
 
 \item{\code{B}}{[\code{integer()}]\cr
 The total budget for the bracket. Note that B is given by  \cr
-\code{(max(s) + 1)*max.ressources}}
+\code{(max(s) + 1)*max.resources}}
 
 \item{\code{id}}{[\code{string}]\cr
 An id for each Algorithm object in the bracket object}
@@ -57,7 +57,6 @@ The function to carry out training}
 \code{$getTopKModels(k)} displays the best k models \cr
 \code{$filterTopKModels(k)} filters the best k models and deletes the remaining models from the bracket object \cr
 \code{$getPerformances()} computes the performance of all remaining models \cr
-\code{$visPerformances()} visualizes the performance of the bracket \cr
 }
 
 \examples{
@@ -66,13 +65,19 @@ The function to carry out training}
 library("ggplot2")
 library("smoof")
 library("data.table")
-library("dplyr")
 
-# simple example for the branin function, a minimization problem
-problem = makeBraninFunction()
-opt = data.table(x1 = getGlobalOptimum(problem)$param$x1, x2 = getGlobalOptimum(problem)$param$x2)
-# the three red dots are global minima
-autoplot(problem) + geom_point(data = opt, aes(x = x1, y = x2), shape = 20, colour = "red", size = 5)
+# we choose the 2 dimensional branin function
+braninProb = makeBraninFunction()
+
+# the branin function has 3 global minima
+opt = data.table(x1 = getGlobalOptimum(braninProb)$param$x1,
+  x2 = getGlobalOptimum(braninProb)$param$x2)
+param.set = getParamSet(braninProb)
+
+
+#######################################
+## define functions to use hyperband ##
+#######################################
 
 # config space
 configSpace = makeParamSet(
@@ -84,7 +89,7 @@ sample.fun = function(par.set, n.configs, ...) {
 }
 
 # init fun
-init.fun = function(r, config) {
+init.fun = function(r, config, problem) {
   x1 = unname(unlist(config))
   x2 = runif(1, 0, 15)
   mod = c(x1, x2)
@@ -92,7 +97,7 @@ init.fun = function(r, config) {
 }
 
 # train fun
-train.fun = function(mod, budget) {
+train.fun = function(mod, budget, problem) {
   for(i in seq_len(budget)) {
     mod.new = c(mod[[1]], mod[[2]] + rnorm(1, sd = 3))
     if(performance.fun(mod.new) < performance.fun(mod))
@@ -102,23 +107,24 @@ train.fun = function(mod, budget) {
 }
 
 # performance fun
-performance.fun = function(model) {
-  problem(c(model[[1]], model[[2]]))
+performance.fun = function(model, problem) {
+  braninProb(c(model[[1]], model[[2]]))
 }
-
 ###### make branin bracket object #####
 brack = bracket$new(
+  problem = braninProb,
   max.perf = FALSE,
-  max.ressources = 81,
+  max.resources = 81,
   prop.discard = 3,
   s = 4,
   B = (4 + 1)*81,
   id = "branin",
   par.set = configSpace,
   sample.fun = sample.fun,
+  init.fun = init.fun,
   train.fun = train.fun,
   performance.fun = performance.fun)
-  
+
 # the data matrix shows us the hyperparameters, the current budget and the performance
 brack$bracket.storage$data.matrix
 # run the bracket
@@ -126,7 +132,6 @@ brack$run()
 # inspect the data matrix again
 brack$bracket.storage$data.matrix
 # visualize the the bracket
-brack$visPerformances()
 # access the performance of the best model
 brack$getPerformances()
 }
