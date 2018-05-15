@@ -6,7 +6,7 @@ Authors@R: c(
     person("Janek", "Thomas", email = "janek.thomas@stat.uni-muenchen.de", role = "aut", comment = c(ORCID = "0000-0003-4511-6245")))
 Description: R6 implementation of hyperband optimization algorithm.
 Depends:
-    R (>= 3.3.3),
+    R (>= 3.0.2),
     R6,
     ParamHelpers
 Imports:
