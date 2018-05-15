@@ -7,7 +7,6 @@ r:
   - release
 
 r_packages:
-  - R (>= 3.3.1)
   - R6
   - ParamHelpers
   - BBmisc
