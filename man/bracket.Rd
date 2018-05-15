@@ -18,7 +18,7 @@ An \code{\link[R6]{R6Class}} that consits of multiple algorithm objects
 
 \describe{
 \item{\code{max.perf}}{[\code{logical()}]\cr
-TRUE if to maximize the performance (e.g. accuracy of a neural net), 
+TRUE if to maximize the performance (e.g. accuracy of a neural net),
 FALSE if to minimize the performance (e.g. find the minimum of the branin function).}
 
 \item{\code{max.resources}}{[\code{integer()}]\cr
@@ -72,7 +72,8 @@ library("dplyr")
 problem = makeBraninFunction()
 opt = data.table(x1 = getGlobalOptimum(problem)$param$x1, x2 = getGlobalOptimum(problem)$param$x2)
 # the three red dots are global minima
-autoplot(problem) + geom_point(data = opt, aes(x = x1, y = x2), shape = 20, colour = "red", size = 5)
+autoplot(problem) +
+  geom_point(data = opt, aes(x = x1, y = x2), shape = 20, colour = "red", size = 5)
 
 # config space
 configSpace = makeParamSet(
@@ -118,7 +119,7 @@ brack = bracket$new(
   sample.fun = sample.fun,
   train.fun = train.fun,
   performance.fun = performance.fun)
-  
+
 # the data matrix shows us the hyperparameters, the current budget and the performance
 brack$bracket.storage$data.matrix
 # run the bracket

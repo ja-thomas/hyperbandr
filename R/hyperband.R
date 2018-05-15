@@ -3,8 +3,10 @@
 #' @description
 #' Runs hyperband
 #'
+#' @param problem [\code{list()}]\cr
+#'  List containing data and other information required for train
 #' @param max.perf [\code{logical()}]\cr
-#' TRUE if to maximize the performance (e.g. accuracy of a neural net), 
+#' TRUE if to maximize the performance (e.g. accuracy of a neural net),
 #' FALSE if to minimize the performance (e.g. find the minimum of the branin function). \cr
 #' Default: TRUE
 #' @param max.resources [\code{integer()}]\cr
@@ -15,38 +17,43 @@
 #' An id for each Algorithm object in the bracket object
 #' @param par.set \cr
 #' The parameter set to sample from
+#' @param init.fun \cr
+#' The function to initial a model
 #' @param sample.fun \cr
 #' The function to sample from par.set
 #' @param train.fun \cr
 #' The function to carry out training
 #' @param performance.fun
 #' The function to measure the performance
-#'   
+#' @param ...
+#' Further arguments
+#'
 #' @return List of brackets
 #' @export
 #' @examples
-#' 
+#'
 #' # we need some packages
 #' library("ggplot2")
 #' library("smoof")
 #' library("data.table")
 #' library("dplyr")
-#' 
+#'
 #' # simple example for the branin function, a minimization problem
 #' problem = makeBraninFunction()
 #' opt = data.table(x1 = getGlobalOptimum(problem)$param$x1, x2 = getGlobalOptimum(problem)$param$x2)
 #' # the three red dots are global minima
-#' autoplot(problem) + geom_point(data = opt, aes(x = x1, y = x2), shape = 20, colour = "red", size = 5)
-#' 
+#' autoplot(problem) +
+#'   geom_point(data = opt, aes(x = x1, y = x2), shape = 20, colour = "red", size = 5)
+#'
 #' # config space
 #' configSpace = makeParamSet(
 #'     makeNumericParam(id = "x1", lower = -5, upper = 10.1))
-#' 
+#'
 #' # sample fun
 #' sample.fun = function(par.set, n.configs, ...) {
 #'   sampleValues(par = par.set, n = n.configs)
 #' }
-#' 
+#'
 #' # init fun
 #' init.fun = function(r, config) {
 #'   x1 = unname(unlist(config))
@@ -54,7 +61,7 @@
 #'   mod = c(x1, x2)
 #'   return(mod)
 #' }
-#' 
+#'
 #' # train fun
 #' train.fun = function(mod, budget) {
 #'   for(i in seq_len(budget)) {
@@ -64,28 +71,26 @@
 #'   }
 #'   return(mod)
 #' }
-#' 
+#'
 #' # performance fun
 #' performance.fun = function(model) {
 #'   problem(c(model[[1]], model[[2]]))
 #' }
-#'  
-#' ########### call hyperband ############ 
+#'
+#' ########### call hyperband ############
 #' hyperhyper = hyperband(
-#'   max.resources = 81, 
-#'   prop.discard = 3,  
+#'   max.resources = 81,
+#'   prop.discard = 3,
 #'   max.perf = FALSE,
-#'   id = "branin", 
-#'   par.set = configSpace, 
+#'   id = "branin",
+#'   par.set = configSpace,
 #'   sample.fun =  sample.fun,
-#'   train.fun = train.fun, 
+#'   train.fun = train.fun,
 #'   performance.fun = performance.fun)
-#' 
+#'
 #' # get performance and visualize brackets
 #' lapply(hyperhyper, function(x) x$visPerformances())
 #' lapply(hyperhyper, function(x) x$getPerformances())
-
-
 hyperband = function(problem, max.resources = 81, prop.discard = 3,
   max.perf = TRUE, id, par.set, sample.fun, init.fun, train.fun, performance.fun, ...) {
   # |sMax + 1| are the total number of brackets to try
@@ -98,7 +103,7 @@ hyperband = function(problem, max.resources = 81, prop.discard = 3,
   for(s in sMax:0) {
     catf("Beginning with bracket %s", s)
     brack = bracket$new(
-      problem, 
+      problem,
       max.perf = max.perf,
       max.resources = max.resources,
       prop.discard = prop.discard,

@@ -8,6 +8,9 @@ hyperband(problem, max.resources = 81, prop.discard = 3, max.perf = TRUE,
   id, par.set, sample.fun, init.fun, train.fun, performance.fun, ...)
 }
 \arguments{
+\item{problem}{[\code{list()}]\cr
+List containing data and other information required for train}
+
 \item{max.resources}{[\code{integer()}]\cr
 The maximum amount of resource that canbe allocated to a single configuration}
 
@@ -15,7 +18,7 @@ The maximum amount of resource that canbe allocated to a single configuration}
 An input that controls the proportion of configurations discarded in each round of successive halving}
 
 \item{max.perf}{[\code{logical()}]\cr
-TRUE if to maximize the performance (e.g. accuracy of a neural net), 
+TRUE if to maximize the performance (e.g. accuracy of a neural net),
 FALSE if to minimize the performance (e.g. find the minimum of the branin function). \cr
 Default: TRUE}
 
@@ -28,10 +31,15 @@ The parameter set to sample from}
 \item{sample.fun}{\cr
 The function to sample from par.set}
 
+\item{init.fun}{\cr
+The function to initial a model}
+
 \item{train.fun}{\cr
 The function to carry out training}
 
 \item{performance.fun}{The function to measure the performance}
+
+\item{...}{Further arguments}
 }
 \value{
 List of brackets
@@ -51,7 +59,8 @@ library("dplyr")
 problem = makeBraninFunction()
 opt = data.table(x1 = getGlobalOptimum(problem)$param$x1, x2 = getGlobalOptimum(problem)$param$x2)
 # the three red dots are global minima
-autoplot(problem) + geom_point(data = opt, aes(x = x1, y = x2), shape = 20, colour = "red", size = 5)
+autoplot(problem) +
+  geom_point(data = opt, aes(x = x1, y = x2), shape = 20, colour = "red", size = 5)
 
 # config space
 configSpace = makeParamSet(
@@ -84,16 +93,16 @@ train.fun = function(mod, budget) {
 performance.fun = function(model) {
   problem(c(model[[1]], model[[2]]))
 }
- 
-########### call hyperband ############ 
+
+########### call hyperband ############
 hyperhyper = hyperband(
-  max.resources = 81, 
-  prop.discard = 3,  
+  max.resources = 81,
+  prop.discard = 3,
   max.perf = FALSE,
-  id = "branin", 
-  par.set = configSpace, 
+  id = "branin",
+  par.set = configSpace,
   sample.fun =  sample.fun,
-  train.fun = train.fun, 
+  train.fun = train.fun,
   performance.fun = performance.fun)
 
 # get performance and visualize brackets

@@ -5,7 +5,7 @@
 #' An \code{\link[R6]{R6Class}} that consits of multiple algorithm objects
 #'
 #' @field max.perf [\code{logical()}]\cr
-#' TRUE if to maximize the performance (e.g. accuracy of a neural net), 
+#' TRUE if to maximize the performance (e.g. accuracy of a neural net),
 #' FALSE if to minimize the performance (e.g. find the minimum of the branin function).
 #' @field max.resources [\code{integer()}]\cr
 #' The maximum amount of resource that can be allocated to a single configuration
@@ -39,28 +39,29 @@
 #' @return Bracket object
 #' @export
 #' @examples
-#' 
+#'
 #' # we need some packages
 #' library("ggplot2")
 #' library("smoof")
 #' library("data.table")
 #' library("dplyr")
-#' 
+#'
 #' # simple example for the branin function, a minimization problem
 #' problem = makeBraninFunction()
 #' opt = data.table(x1 = getGlobalOptimum(problem)$param$x1, x2 = getGlobalOptimum(problem)$param$x2)
 #' # the three red dots are global minima
-#' autoplot(problem) + geom_point(data = opt, aes(x = x1, y = x2), shape = 20, colour = "red", size = 5)
-#' 
+#' autoplot(problem) +
+#'   geom_point(data = opt, aes(x = x1, y = x2), shape = 20, colour = "red", size = 5)
+#'
 #' # config space
 #' configSpace = makeParamSet(
 #'     makeNumericParam(id = "x1", lower = -5, upper = 10.1))
-#' 
+#'
 #' # sample fun
 #' sample.fun = function(par.set, n.configs, ...) {
 #'   sampleValues(par = par.set, n = n.configs)
 #' }
-#' 
+#'
 #' # init fun
 #' init.fun = function(r, config) {
 #'   x1 = unname(unlist(config))
@@ -68,7 +69,7 @@
 #'   mod = c(x1, x2)
 #'   return(mod)
 #' }
-#' 
+#'
 #' # train fun
 #' train.fun = function(mod, budget) {
 #'   for(i in seq_len(budget)) {
@@ -78,12 +79,12 @@
 #'   }
 #'   return(mod)
 #' }
-#' 
+#'
 #' # performance fun
 #' performance.fun = function(model) {
 #'   problem(c(model[[1]], model[[2]]))
 #' }
-#' 
+#'
 #' ###### make branin bracket object #####
 #' brack = bracket$new(
 #'   max.perf = FALSE,
@@ -96,7 +97,7 @@
 #'   sample.fun = sample.fun,
 #'   train.fun = train.fun,
 #'   performance.fun = performance.fun)
-#'   
+#'
 #' # the data matrix shows us the hyperparameters, the current budget and the performance
 #' brack$bracket.storage$data.matrix
 #' # run the bracket
@@ -127,7 +128,7 @@ bracket = R6Class("Bracket",
     bracket.storage = NULL,
     adjust = NULL,
     ## initialize the bracket object
-    initialize = function(problem, max.perf, max.resources, prop.discard, s, B, id, 
+    initialize = function(problem, max.perf, max.resources, prop.discard, s, B, id,
         par.set, sample.fun, init.fun, train.fun, performance.fun, ...) {
       self$max.perf = max.perf
       self$id = id
@@ -140,22 +141,22 @@ bracket = R6Class("Bracket",
       self$configurations = sample.fun(self$par.set, self$n.configs, ...)
       # create the models
       self$models = mapply(function(conf, name) {
-        algorithm$new(problem, 
-                      id = paste(id, name, sep = "."), 
+        algorithm$new(problem,
+                      id = paste(id, name, sep = "."),
                       configuration = conf,
                       initial.budget = self$getBudgetAllocation(),
-                      init.fun = init.fun, 
-                      train.fun = train.fun, 
+                      init.fun = init.fun,
+                      train.fun = train.fun,
                       performance.fun = performance.fun)
       }, conf = self$configurations, name = seq_len(self$n.configs))
       # initialize bracket storage
       self$bracket.storage = bracketStorage$new(self$models)
     },
-    ## method to compute budget allocation at each step of successive halving 
+    ## method to compute budget allocation at each step of successive halving
     getBudgetAllocation = function() {
       self$r.config*self$prop.discard^(self$iteration)
     },
-    ## method to compute the number of models to keep after each step of successive halving 
+    ## method to compute the number of models to keep after each step of successive halving
     getNumberOfModelsToSelect = function() {
       floor(self$n.configs / self$prop.discard)
     },
@@ -200,7 +201,7 @@ bracket = R6Class("Bracket",
     },
     ## method to print the current state of successive halving
     printState = function() {
-      catf("Iteration %i, with %i Algorithms left (Budget: %i)", self$iteration, self$n.configs, 
+      catf("Iteration %i, with %i Algorithms left (Budget: %i)", self$iteration, self$n.configs,
         self$models[[1]]$current.budget)
     },
     ## method to visualize the bracket performance
@@ -220,14 +221,14 @@ bracket = R6Class("Bracket",
         x.lab = ifelse(make.labs == TRUE, "budget", "")
         ggplot(df.gg, aes(x = current_budget, y = y, colour = configuration)) +
           scale_y_continuous(name = y.lab, ...) +
-          scale_x_continuous(labels = function (x) floor(x), name = x.lab) + 
+          scale_x_continuous(labels = function (x) floor(x), name = x.lab) +
           theme_minimal() +
           theme(plot.title = element_text(hjust = 0.5)) +
           ggtitle(paste0("bracket ", self$s)) +
           geom_point(show.legend = FALSE) +
-          geom_line(data = df.gg[df.gg$count > 1, ], 
+          geom_line(data = df.gg[df.gg$count > 1, ],
             aes(x = current_budget, y = y, colour = configuration), show.legend = FALSE)
-      }  
+      }
     }
   )
 )

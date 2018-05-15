@@ -7,12 +7,11 @@ Authors@R: c(
 Description: R6 implementation of hyperband optimization algorithm.
 Depends:
     R (>= 3.3.1),
-    R6,
+    R6
+Imports:
+    BBmisc,
     checkmate,
-    BBmisc
-License: BSD_2_clause + file LICENSE
-Encoding: UTF-8
-LazyData: true
+    ParamHelpers
 Suggests:
     knitr,
     rmarkdown,
@@ -20,7 +19,11 @@ Suggests:
     smoof,
     mlr,
     reshape2,
-    checkmate,
-    ggplot2
+    ggplot2,
+    dplyr,
+    data.table
+License: BSD_2_clause + file LICENSE
+Encoding: UTF-8
+LazyData: true
 VignetteBuilder: knitr
 RoxygenNote: 6.0.1

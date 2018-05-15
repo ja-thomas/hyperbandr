@@ -18,15 +18,15 @@ hyperVis(hyper.object, rows = 1, cols = length(hyper.object),
 \item{hyper.object}{[\code{logical()}]\cr
 A list of brackets (e.g. a hyperband "object")}
 
-\item{perfLimits}{[\code{vector of integers()}]\cr
-Vector representing the lower and upper limit of the y-axis (performance). 
-Default: hyperVis tries to automatically determine the upper and lower limits.}
-
-\item{nrow}{[\code{integer()}]\cr
+\item{rows}{[\code{integer(1)}]\cr
 The number of rows to present the brackets. Default is 1.}
 
-\item{nrow}{[\code{integer()}]\cr
+\item{cols}{[\code{integer(1)}]\cr
 The number of columns to present the brackets. Default is length(hyper.object).}
+
+\item{perfLimits}{[\code{vector of integers()}]\cr
+Vector representing the lower and upper limit of the y-axis (performance).
+Default: hyperVis tries to automatically determine the upper and lower limits.}
 }
 \value{
 ggplot2 object
@@ -46,7 +46,8 @@ library("dplyr")
 problem = makeBraninFunction()
 opt = data.table(x1 = getGlobalOptimum(problem)$param$x1, x2 = getGlobalOptimum(problem)$param$x2)
 # the three red dots are global minima
-autoplot(problem) + geom_point(data = opt, aes(x = x1, y = x2), shape = 20, colour = "red", size = 5)
+autoplot(problem) +
+  geom_point(data = opt, aes(x = x1, y = x2), shape = 20, colour = "red", size = 5)
 
 # config space
 configSpace = makeParamSet(
@@ -79,16 +80,16 @@ train.fun = function(mod, budget) {
 performance.fun = function(model) {
   problem(c(model[[1]], model[[2]]))
 }
- 
-########### call hyperband ############ 
+
+########### call hyperband ############
 hyperhyper = hyperband(
-  max.resources = 81, 
-  prop.discard = 3,  
+  max.resources = 81,
+  prop.discard = 3,
   max.perf = FALSE,
-  id = "branin", 
-  par.set = configSpace, 
+  id = "branin",
+  par.set = configSpace,
   sample.fun =  sample.fun,
-  train.fun = train.fun, 
+  train.fun = train.fun,
   performance.fun = performance.fun)
 
 # visualize all brackets

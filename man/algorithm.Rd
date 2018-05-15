@@ -53,11 +53,12 @@ library("data.table")
 problem = makeBraninFunction()
 opt = data.table(x1 = getGlobalOptimum(problem)$param$x1, x2 = getGlobalOptimum(problem)$param$x2)
 # the three red dots are global minima
-autoplot(problem) + geom_point(data = opt, aes(x = x1, y = x2), shape = 20, colour = "red", size = 5)
+autoplot(problem) +
+  geom_point(data = opt, aes(x = x1, y = x2), shape = 20, colour = "red", size = 5)
 
 # config space
 configSpace = makeParamSet(
-    makeNumericParam(id = "x1", lower = -5, upper = 10.1))
+  makeNumericParam(id = "x1", lower = -5, upper = 10.1))
 
 # sample fun
 sample.fun = function(par.set, n.configs, ...) {
