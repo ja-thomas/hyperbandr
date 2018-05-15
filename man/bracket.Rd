@@ -21,7 +21,7 @@ An \code{\link[R6]{R6Class}} that consits of multiple algorithm objects
 TRUE if to maximize the performance (e.g. accuracy of a neural net), 
 FALSE if to minimize the performance (e.g. find the minimum of the branin function).}
 
-\item{\code{max.ressources}}{[\code{integer()}]\cr
+\item{\code{max.resources}}{[\code{integer()}]\cr
 The maximum amount of resource that can be allocated to a single configuration}
 
 \item{\code{prop.discard}}{[\code{integer()}]\cr
@@ -29,11 +29,11 @@ An input that controls the proportion of configurations discarded in each round 
 
 \item{\code{s}}{[\code{integer()}]\cr
 The s'th bracket object to create. Note that s is in \cr
-\code{(0,...,floor(log(max.ressources, base = prop.discard)))}}
+\code{(0,...,floor(log(max.resources, base = prop.discard)))}}
 
 \item{\code{B}}{[\code{integer()}]\cr
 The total budget for the bracket. Note that B is given by  \cr
-\code{(max(s) + 1)*max.ressources}}
+\code{(max(s) + 1)*max.resources}}
 
 \item{\code{id}}{[\code{string}]\cr
 An id for each Algorithm object in the bracket object}
@@ -109,7 +109,7 @@ performance.fun = function(model) {
 ###### make branin bracket object #####
 brack = bracket$new(
   max.perf = FALSE,
-  max.ressources = 81,
+  max.resources = 81,
   prop.discard = 3,
   s = 4,
   B = (4 + 1)*81,

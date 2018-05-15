@@ -4,11 +4,23 @@
 \alias{hyperVis}
 \title{HyperVis}
 \usage{
-hyperVis(hyper.object, rows = 1, cols = length(hyper.object))
+hyperVis(hyper.object, rows = 1, cols = length(hyper.object),
+  perfLimits = c(floor(min(unlist(lapply(hyper.object, function(x)
+  min(x$bracket.storage$data.matrix$y))))),
+  ifelse(ceiling(max(unlist(lapply(hyper.object, function(x)
+  max(x$bracket.storage$data.matrix$y))))) == 1,
+  round(max(unlist(lapply(hyper.object, function(x)
+  max(x$bracket.storage$data.matrix$y)))), digits = 2),
+  ceiling(max(unlist(lapply(hyper.object, function(x)
+  max(x$bracket.storage$data.matrix$y))))))))
 }
 \arguments{
 \item{hyper.object}{[\code{logical()}]\cr
 A list of brackets (e.g. a hyperband "object")}
+
+\item{perfLimits}{[\code{vector of integers()}]\cr
+Vector representing the lower and upper limit of the y-axis (performance). 
+Default: hyperVis tries to automatically determine the upper and lower limits.}
 
 \item{nrow}{[\code{integer()}]\cr
 The number of rows to present the brackets. Default is 1.}
@@ -70,7 +82,7 @@ performance.fun = function(model) {
  
 ########### call hyperband ############ 
 hyperhyper = hyperband(
-  max.ressources = 81, 
+  max.resources = 81, 
   prop.discard = 3,  
   max.perf = FALSE,
   id = "branin", 
@@ -79,7 +91,6 @@ hyperhyper = hyperband(
   train.fun = train.fun, 
   performance.fun = performance.fun)
 
-# get performance and visualize brackets
-
-hyperVis(hyperhyper, rows = 1, cols = 5)
+# visualize all brackets
+hyperVis(hyperhyper)
 }
