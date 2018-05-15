@@ -2,6 +2,12 @@
 hyperband in R6
 ===============
 
+[![Build Status](https://travis-ci.org/ja-thomas/hyperbandr.svg?branch=master)](https://travis-ci.org/ja-thomas/hyperbandr)
+[![Coverage Status](https://coveralls.io/repos/github/ja-thomas/hyperbandr/badge.svg?branch=master)](https://coveralls.io/github/ja-thomas/hyperbandr?branch=master)
+[![CRAN Status Badge](http://www.r-pkg.org/badges/version/hyperbandr)](https://CRAN.R-project.org/package=hyperbandr)
+[![CRAN Downloads](http://cranlogs.r-pkg.org/badges/hyperbandr)](https://cran.rstudio.com/web/packages/hyperbandr/index.html)
+
+
 This is a very generic R6 implementation of the hyperband algorithm for hyperparameter optimization (<https://arxiv.org/pdf/1603.06560.pdf>)
 
 The project is not yet finished but can already be used on your own problems and should work with any other R package/algorithm as long as it is suitable for hyperband.
@@ -72,14 +78,14 @@ init.fun = function(r, config, problem) {
     ctx = mx.gpu(),
     # we define a small CNN architecture with two conv and two dense layers
     # (the second dense layer is our output and will be created automatically by mlr)
-    layers = 3, 
+    layers = 3,
     conv.layer1 = TRUE, conv.layer2 = TRUE,
     conv.data.shape = c(28, 28),
     num.layer1 = 8, num.layer2 = 16, num.layer3 = 64,
-    conv.kernel1 = c(3,3), conv.stride1 = c(1,1), 
+    conv.kernel1 = c(3,3), conv.stride1 = c(1,1),
     pool.kernel1 = c(2,2), pool.stride1 = c(2,2),
-    conv.kernel2 = c(3,3), conv.stride2 = c(1,1), 
-    pool.kernel2 = c(2,2), pool.stride2 = c(2,2),           
+    conv.kernel2 = c(3,3), conv.stride2 = c(1,1),
+    pool.kernel2 = c(2,2), pool.stride2 = c(2,2),
     array.batch.size = 128,
     # we initialize our model with r iterations
     begin.round = 1, num.round = r,
@@ -100,7 +106,7 @@ train.fun = function(mod, budget, problem) {
   # we create a new learner and assign all parameters from our model
   lrn = makeLearner("classif.mxff", ctx = mx.gpu(), par.vals = mod$learner$par.vals)
   lrn = setHyperPars(lrn,
-    # in addition, we have to extract the weights and feed them into our new model 
+    # in addition, we have to extract the weights and feed them into our new model
     symbol = mod$learner.model$symbol,
     arg.params = mod$learner.model$arg.params,
     aux.params = mod$learner.model$aux.params,
@@ -128,14 +134,14 @@ Now we can call hyperband (with these hyperparameters, one run needs like 5 minu
 ``` r
 hyperhyper = hyperband(
   problem = problem,
-  max.resources = 81, 
+  max.resources = 81,
   prop.discard = 3,
   max.perf = TRUE,
-  id = "nnet", 
-  par.set = configSpace, 
+  id = "nnet",
+  par.set = configSpace,
   sample.fun =  sample.fun,
   init.fun = init.fun,
-  train.fun = train.fun, 
+  train.fun = train.fun,
   performance.fun = performance.fun)
 #> Beginning with bracket 4
 #> Iteration 0, with 81 Algorithms left (Budget: 1)
@@ -175,28 +181,28 @@ hyperhyper[[1]]
 #>     adjust: 27
 #>     B: 405
 #>     bracket.storage: BracketStorage, R6
-#>     clone: function (deep = FALSE) 
+#>     clone: function (deep = FALSE)
 #>     configurations: list
-#>     filterTopKModels: function (k) 
-#>     getBudgetAllocation: function () 
-#>     getNumberOfModelsToSelect: function () 
-#>     getPerformances: function () 
-#>     getTopKModels: function (k) 
+#>     filterTopKModels: function (k)
+#>     getBudgetAllocation: function ()
+#>     getNumberOfModelsToSelect: function ()
+#>     getPerformances: function ()
+#>     getTopKModels: function (k)
 #>     id: nnet
-#>     initialize: function (problem, max.perf, max.resources, prop.discard, s, 
+#>     initialize: function (problem, max.perf, max.resources, prop.discard, s,
 #>     iteration: 4
 #>     max.perf: TRUE
 #>     max.resources: NULL
 #>     models: list
 #>     n.configs: 1
 #>     par.set: ParamSet
-#>     printState: function () 
+#>     printState: function ()
 #>     prop.discard: 3
 #>     r.config: 1
-#>     run: function () 
+#>     run: function ()
 #>     s: 4
 #>     sample.fun: NULL
-#>     step: function () 
+#>     step: function ()
 #>     visPerformances: function (make.labs = TRUE, ...)
 ```
 
@@ -222,16 +228,16 @@ Let's see which bracket yielded the best performance:
 lapply(hyperhyper, function(x) x$getPerformances())
 #> [[1]]
 #> [1] 0.973
-#> 
+#>
 #> [[2]]
 #> [1] 0.963
-#> 
+#>
 #> [[3]]
 #> [1] 0.947
-#> 
+#>
 #> [[4]]
 #> [1] 0.96
-#> 
+#>
 #> [[5]]
 #> [1] 0.961
 ```
@@ -250,9 +256,9 @@ Now we use the best model and predict test data:
 best.mod.index = which.max(unlist(lapply(hyperhyper, function(x) x$getPerformances())))
 best.mod = hyperhyper[[best.mod.index]]$models[[1]]$model
 
-performance(predict(object = best.mod, task = problem$data, subset = problem$test), 
+performance(predict(object = best.mod, task = problem$data, subset = problem$test),
             measures = acc)
-#>   acc 
+#>   acc
 #> 0.982
 ```
 
