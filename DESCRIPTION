@@ -7,16 +7,16 @@ Authors@R: c(
 Description: R6 implementation of hyperband optimization algorithm.
 Depends:
     R (>= 3.3.1),
-    R6
+    R6,
+    ParamHelpers
 Imports:
     BBmisc,
     checkmate,
-    ParamHelpers
+    smoof
 Suggests:
     knitr,
     rmarkdown,
     testthat,
-    smoof,
     mlr,
     reshape2,
     ggplot2,
