@@ -29,21 +29,25 @@
 #' Further arguments
 #'
 #' @return List of brackets
-#' @export
 #' @examples
 #'
 #' # we need some packages
 #' library("ggplot2")
 #' library("smoof")
 #' library("data.table")
-#' library("dplyr")
 #'
-#' # simple example for the branin function, a minimization problem
-#' problem = makeBraninFunction()
-#' opt = data.table(x1 = getGlobalOptimum(problem)$param$x1, x2 = getGlobalOptimum(problem)$param$x2)
-#' # the three red dots are global minima
-#' autoplot(problem) +
-#'   geom_point(data = opt, aes(x = x1, y = x2), shape = 20, colour = "red", size = 5)
+#' # we choose the 2 dimensional branin function
+#' braninProb = makeBraninFunction()
+#'
+#' # the branin function has 3 global minima
+#' opt = data.table(x1 = getGlobalOptimum(braninProb)$param$x1,
+#'   x2 = getGlobalOptimum(braninProb)$param$x2)
+#' param.set = getParamSet(braninProb)
+#'
+#'
+#' #######################################
+#' ## define functions to use hyperband ##
+#' #######################################
 #'
 #' # config space
 #' configSpace = makeParamSet(
@@ -55,7 +59,7 @@
 #' }
 #'
 #' # init fun
-#' init.fun = function(r, config) {
+#' init.fun = function(r, config, problem) {
 #'   x1 = unname(unlist(config))
 #'   x2 = runif(1, 0, 15)
 #'   mod = c(x1, x2)
@@ -63,7 +67,7 @@
 #' }
 #'
 #' # train fun
-#' train.fun = function(mod, budget) {
+#' train.fun = function(mod, budget, problem) {
 #'   for(i in seq_len(budget)) {
 #'     mod.new = c(mod[[1]], mod[[2]] + rnorm(1, sd = 3))
 #'     if(performance.fun(mod.new) < performance.fun(mod))
@@ -73,24 +77,25 @@
 #' }
 #'
 #' # performance fun
-#' performance.fun = function(model) {
-#'   problem(c(model[[1]], model[[2]]))
+#' performance.fun = function(model, problem) {
+#'   braninProb(c(model[[1]], model[[2]]))
 #' }
 #'
-#' ########### call hyperband ############
 #' hyperhyper = hyperband(
-#'   max.resources = 81,
-#'   prop.discard = 3,
-#'   max.perf = FALSE,
-#'   id = "branin",
-#'   par.set = configSpace,
-#'   sample.fun =  sample.fun,
-#'   train.fun = train.fun,
-#'   performance.fun = performance.fun)
+#'  problem = braninProb,
+#'  max.resources = 81,
+#'  prop.discard = 3,
+#'  max.perf = FALSE,
+#'  id = "branin",
+#'  par.set = configSpace,
+#'  sample.fun =  sample.fun,
+#'  init.fun = init.fun,
+#'  train.fun = train.fun,
+#'  performance.fun = performance.fun)
 #'
-#' # get performance and visualize brackets
-#' lapply(hyperhyper, function(x) x$visPerformances())
+#' # get the best performance of each bracket
 #' lapply(hyperhyper, function(x) x$getPerformances())
+#' @export
 hyperband = function(problem, max.resources = 81, prop.discard = 3,
   max.perf = TRUE, id, par.set, sample.fun, init.fun, train.fun, performance.fun, ...) {
   # |sMax + 1| are the total number of brackets to try

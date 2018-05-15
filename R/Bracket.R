@@ -34,24 +34,27 @@
 #' \code{$getTopKModels(k)} displays the best k models \cr
 #' \code{$filterTopKModels(k)} filters the best k models and deletes the remaining models from the bracket object \cr
 #' \code{$getPerformances()} computes the performance of all remaining models \cr
-#' \code{$visPerformances()} visualizes the performance of the bracket \cr
 #'
 #' @return Bracket object
-#' @export
 #' @examples
 #'
 #' # we need some packages
 #' library("ggplot2")
 #' library("smoof")
 #' library("data.table")
-#' library("dplyr")
 #'
-#' # simple example for the branin function, a minimization problem
-#' problem = makeBraninFunction()
-#' opt = data.table(x1 = getGlobalOptimum(problem)$param$x1, x2 = getGlobalOptimum(problem)$param$x2)
-#' # the three red dots are global minima
-#' autoplot(problem) +
-#'   geom_point(data = opt, aes(x = x1, y = x2), shape = 20, colour = "red", size = 5)
+#' # we choose the 2 dimensional branin function
+#' braninProb = makeBraninFunction()
+#'
+#' # the branin function has 3 global minima
+#' opt = data.table(x1 = getGlobalOptimum(braninProb)$param$x1,
+#'   x2 = getGlobalOptimum(braninProb)$param$x2)
+#' param.set = getParamSet(braninProb)
+#'
+#'
+#' #######################################
+#' ## define functions to use hyperband ##
+#' #######################################
 #'
 #' # config space
 #' configSpace = makeParamSet(
@@ -63,7 +66,7 @@
 #' }
 #'
 #' # init fun
-#' init.fun = function(r, config) {
+#' init.fun = function(r, config, problem) {
 #'   x1 = unname(unlist(config))
 #'   x2 = runif(1, 0, 15)
 #'   mod = c(x1, x2)
@@ -71,7 +74,7 @@
 #' }
 #'
 #' # train fun
-#' train.fun = function(mod, budget) {
+#' train.fun = function(mod, budget, problem) {
 #'   for(i in seq_len(budget)) {
 #'     mod.new = c(mod[[1]], mod[[2]] + rnorm(1, sd = 3))
 #'     if(performance.fun(mod.new) < performance.fun(mod))
@@ -81,12 +84,12 @@
 #' }
 #'
 #' # performance fun
-#' performance.fun = function(model) {
-#'   problem(c(model[[1]], model[[2]]))
+#' performance.fun = function(model, problem) {
+#'   braninProb(c(model[[1]], model[[2]]))
 #' }
-#'
-#' ###### make branin bracket object #####
+#'###### make branin bracket object #####
 #' brack = bracket$new(
+#'   problem = braninProb,
 #'   max.perf = FALSE,
 #'   max.resources = 81,
 #'   prop.discard = 3,
@@ -95,6 +98,7 @@
 #'   id = "branin",
 #'   par.set = configSpace,
 #'   sample.fun = sample.fun,
+#'   init.fun = init.fun,
 #'   train.fun = train.fun,
 #'   performance.fun = performance.fun)
 #'
@@ -105,11 +109,9 @@
 #' # inspect the data matrix again
 #' brack$bracket.storage$data.matrix
 #' # visualize the the bracket
-#' brack$visPerformances()
 #' # access the performance of the best model
 #' brack$getPerformances()
-
-
+#' @export
 bracket = R6Class("Bracket",
   public = list(
     id = NULL,
@@ -203,32 +205,6 @@ bracket = R6Class("Bracket",
     printState = function() {
       catf("Iteration %i, with %i Algorithms left (Budget: %i)", self$iteration, self$n.configs,
         self$models[[1]]$current.budget)
-    },
-    ## method to visualize the bracket performance
-    visPerformances = function(make.labs = TRUE, ...) {
-      if (dim(self$bracket.storage$data.matrix)[1] == self$n.configs) {
-        catf("execute $run() or $step() before using $visPerformances()")
-      } else {
-      # some dplyr magic to prepare the bracket data for plotting
-        help.df = self$bracket.storage$data.matrix %>%
-          select(1:length(self$par.set$pars)) %>% unique() %>% mutate(configuration = 1:nrow(.))
-        group.names = names(self$bracket.storage$data.matrix)[1:length(self$par.set$pars)]
-        df.gg = self$bracket.storage$data.matrix %>% left_join(help.df, by = group.names) %>%
-          group_by_at(vars(one_of(group.names))) %>% mutate(count = n())
-        df.gg$configuration = as.factor(df.gg$configuration)
-      # plot the mutated data
-        y.lab = ifelse(make.labs == TRUE, "performance", "")
-        x.lab = ifelse(make.labs == TRUE, "budget", "")
-        ggplot(df.gg, aes(x = current_budget, y = y, colour = configuration)) +
-          scale_y_continuous(name = y.lab, ...) +
-          scale_x_continuous(labels = function (x) floor(x), name = x.lab) +
-          theme_minimal() +
-          theme(plot.title = element_text(hjust = 0.5)) +
-          ggtitle(paste0("bracket ", self$s)) +
-          geom_point(show.legend = FALSE) +
-          geom_line(data = df.gg[df.gg$count > 1, ],
-            aes(x = current_budget, y = y, colour = configuration), show.legend = FALSE)
-      }
     }
   )
 )
