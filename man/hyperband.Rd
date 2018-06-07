@@ -5,7 +5,8 @@
 \title{Hyperband}
 \usage{
 hyperband(problem, max.resources = 81, prop.discard = 3, max.perf = TRUE,
-  id, par.set, sample.fun, init.fun, train.fun, performance.fun, ...)
+  id, par.set, sample.fun = function(par.set, n.configs, ...) sampleValues(par
+  = par.set, n = n.configs), init.fun, train.fun, performance.fun, ...)
 }
 \arguments{
 \item{problem}{[\code{list()}]\cr

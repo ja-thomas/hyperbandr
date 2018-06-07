@@ -4,29 +4,31 @@
 #' Runs hyperband
 #'
 #' @param problem [\code{list()}]\cr
-#'  List containing data and other information required for train
-#' @param max.perf [\code{logical()}]\cr
-#' TRUE if to maximize the performance (e.g. accuracy of a neural net),
-#' FALSE if to minimize the performance (e.g. find the minimum of the branin function). \cr
-#' Default: TRUE
-#' @param max.resources [\code{integer()}]\cr
-#' The maximum amount of resource that canbe allocated to a single configuration
-#' @param prop.discard [\code{integer()}]\cr
-#' An input that controls the proportion of configurations discarded in each round of successive halving
-#' @param id [\code{string}]\cr
-#' An id for each Algorithm object in the bracket object
-#' @param par.set \cr
-#' The parameter set to sample from
-#' @param init.fun \cr
-#' The function to initial a model
-#' @param sample.fun \cr
-#' The function to sample from par.set
-#' @param train.fun \cr
-#' The function to carry out training
-#' @param performance.fun
-#' The function to measure the performance
+#'   List containing data or other information required by \code{train.fun}.
+#' @param max.perf [\code{logical(1)}]\cr
+#'   \code{TRUE} if \code{performance.fun} should be maximized (e.g. accuracy of a neural net),
+#'   \code{FALSE} if it should be mimized (e.g. misclassifaction error). Default is \code{TRUE}.
+#' @param max.resources [\code{integer(1)}]\cr
+#'   The maximum amount of resources (e.g. iterations) that can be allocated to a single configuration.
+#' @param prop.discard [\code{integer(1)}]\cr
+#'   Proportion of configurations to be discarded in each round of successive halving.
+#' @param id [\code{character(1)}]\cr
+#'   Name used for \code{\link{Algorithm}} objects.
+#' @param par.set [\code{\link[ParamHelpers]{ParamSet}}]\cr
+#'   Parameter set to tune over.
+#' @param init.fun [\code{function()}]\cr
+#'   The function to initialize a model. Arguments must be \code{r} for the initial resource allocation,
+#'   \code{config} for the output of \code{sample.fun} and \code{problem}.
+#' @param sample.fun [\code{function()}]\cr
+#'   The function to sample from par.set. Takes \code{par.set} and number of configurations to sample \code{n} as arguments.
+#'   If no set, random sampling with \code{\link[ParamHelopers]{sampleValues}} is used.
+#' @param train.fun [\code{function()}]\cr
+#'   The function to carry out training. Takes the result of \code{init.fun} as first argument, \code{budget} to specify how many resources should be added and \code{problem}.
+#'   Should return an object that can be passed to \code{train.fun} again.
+#' @param performance.fun [\code{function()}]\cr
+#'   The function to measure the performance.
 #' @param ...
-#' Further arguments
+#'   Further arguments
 #'
 #' @return List of brackets
 #' @examples
@@ -97,7 +99,8 @@
 #' lapply(hyperhyper, function(x) x$getPerformances())
 #' @export
 hyperband = function(problem, max.resources = 81, prop.discard = 3,
-  max.perf = TRUE, id, par.set, sample.fun, init.fun, train.fun, performance.fun, ...) {
+  max.perf = TRUE, id, par.set, sample.fun = function(par.set, n.configs, ...) sampleValues(par = par.set, n = n.configs),
+  init.fun, train.fun, performance.fun, ...) {
   # |sMax + 1| are the total number of brackets to try
   sMax =  floor(log(max.resources, base = prop.discard))
   B = (sMax + 1)*max.resources

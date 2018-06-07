@@ -22,7 +22,7 @@
 #' @field par.set \cr
 #' The parameter set to sample from
 #' @field sample.fun \cr
-#' The function to sample from par.set
+#' The function to sample from par.set. If no set, random sampling with \code{\link[ParamHelopers]{sampleValues}} is used.
 #' @field train.fun \cr
 #' The function to carry out training
 #' @field performance.fun
@@ -131,7 +131,8 @@ bracket = R6Class("Bracket",
     adjust = NULL,
     ## initialize the bracket object
     initialize = function(problem, max.perf, max.resources, prop.discard, s, B, id,
-        par.set, sample.fun, init.fun, train.fun, performance.fun, ...) {
+        par.set, sample.fun = function(par.set, n.configs, ...) sampleValues(par = par.set, n = n.configs),
+        init.fun, train.fun, performance.fun, ...) {
       self$max.perf = max.perf
       self$id = id
       self$prop.discard = prop.discard
