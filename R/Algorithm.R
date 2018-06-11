@@ -4,25 +4,29 @@
 #' @description
 #' An \code{\link[R6]{R6Class}} to be optimized by hyperband
 #'
-#' @field id [\code{string}]\cr
-#' An id for the Algorithm object
-#' @field configuration \cr
-#' The configuration to use
-#' @field initial.budget \cr
-#' The budget to use for the initialization of the model
-#' @field init.fun \cr
-#' The function to initialize the model
-#' @field train.fun \cr
-#' The function to carry out training
-#' @field performance.fun
-#' The function to measure the performance
+#' @field problem [\code{list()}]\cr
+#'   List containing data or other information required by \code{train.fun}.
+#' @field id [\code{character(1)}] \cr
+#'   An id for the Algorithm object.
+#' @field configuration [any] \cr
+#'   Passed to \code{init.fun} to initialize a model.
+#' @field initial.budget [\code{integer(1)}] \cr
+#'   The budget to use for the initialization of the model.
+#' @field init.fun [\code{function}]\cr
+#'   The function to initialize a model. Arguments must be \dQuote{r} for the initial resource allocation,
+#'   \dQuote{config} for the output of \code{sample.fun} and \dQuote{problem}.
+#' @field train.fun [\code{function}]\cr
+#'   The function to carry out training. Takes the result of \code{init.fun} as first argument, \dQuote{budget} to specify how many resources should be added and \code{problem}.
+#'   Should return an object that can be passed to \code{train.fun} again.
+#' @field performance.fun [\code{function}]\cr
+#'   The function to measure the performance.
+#'   Takes argumennts \dQuote{model} (result of \code{train.fun}) and \code{problem}.
 #'
 #' @section Methods:
-#' \code{$continue(budget)} continue training for \code{budget} iterations  \cr
+#' \code{$continue(budget)} continue training for \code{budget} iterations \cr
 #' \code{$getPerformance()} computes the performance of the model \cr
 #' \code{$visPerformance()} visualizes the performance of the model \cr
 #'
-#' @return Algorithm object
 #' @examples
 #'
 #' # we need some packages

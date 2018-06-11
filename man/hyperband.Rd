@@ -10,40 +10,44 @@ hyperband(problem, max.resources = 81, prop.discard = 3, max.perf = TRUE,
 }
 \arguments{
 \item{problem}{[\code{list()}]\cr
-List containing data and other information required for train}
+List containing data or other information required by \code{train.fun}.}
 
-\item{max.resources}{[\code{integer()}]\cr
-The maximum amount of resource that canbe allocated to a single configuration}
+\item{max.resources}{[\code{integer(1)}]\cr
+The maximum amount of resources (e.g. iterations) that can be allocated to a single configuration.}
 
-\item{prop.discard}{[\code{integer()}]\cr
-An input that controls the proportion of configurations discarded in each round of successive halving}
+\item{prop.discard}{[\code{integer(1)}]\cr
+Proportion of configurations to be discarded in each round of successive halving.}
 
-\item{max.perf}{[\code{logical()}]\cr
-TRUE if to maximize the performance (e.g. accuracy of a neural net),
-FALSE if to minimize the performance (e.g. find the minimum of the branin function). \cr
-Default: TRUE}
+\item{max.perf}{[\code{logical(1)}]\cr
+\code{TRUE} if \code{performance.fun} should be maximized (e.g. accuracy of a neural net),
+\code{FALSE} if it should be mimized (e.g. misclassifaction error). Default is \code{TRUE}.}
 
-\item{id}{[\code{string}]\cr
-An id for each Algorithm object in the bracket object}
+\item{id}{[\code{character(1)}]\cr
+Name used for \code{\link{algorithm}} objects.}
 
-\item{par.set}{\cr
-The parameter set to sample from}
+\item{par.set}{[\code{\link[ParamHelpers]{ParamSet}}]\cr
+Parameter set to tune over.}
 
-\item{sample.fun}{\cr
-The function to sample from par.set}
+\item{sample.fun}{[\code{function}]\cr
+The function to sample from par.set. Takes \dQuote{par.set} and number of configurations to sample \dQuote{n} as arguments.
+If no set, random sampling with \code{\link[ParamHelpers]{sampleValues}} is used.}
 
-\item{init.fun}{\cr
-The function to initial a model}
+\item{init.fun}{[\code{function}]\cr
+The function to initialize a model. Arguments must be \dQuote{r} for the initial resource allocation,
+\dQuote{config} for the output of \code{sample.fun} and \dQuote{problem}.}
 
-\item{train.fun}{\cr
-The function to carry out training}
+\item{train.fun}{[\code{function}]\cr
+The function to carry out training. Takes the result of \code{init.fun} as first argument, \dQuote{budget} to specify how many resources should be added and \code{problem}.
+Should return an object that can be passed to \code{train.fun} again.}
 
-\item{performance.fun}{The function to measure the performance}
+\item{performance.fun}{[\code{function}]\cr
+The function to measure the performance.
+Takes argumennts \dQuote{model} (result of \code{train.fun}) and \code{problem}.}
 
-\item{...}{Further arguments}
+\item{...}{Further arguments.}
 }
 \value{
-List of brackets
+List of brackets.
 }
 \description{
 Runs hyperband

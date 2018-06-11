@@ -8,36 +8,40 @@
 \usage{
 algorithm
 }
-\value{
-Algorithm object
-}
 \description{
 An \code{\link[R6]{R6Class}} to be optimized by hyperband
 }
 \section{Fields}{
 
 \describe{
-\item{\code{id}}{[\code{string}]\cr
-An id for the Algorithm object}
+\item{\code{problem}}{[\code{list()}]\cr
+List containing data or other information required by \code{train.fun}.}
 
-\item{\code{configuration}}{\cr
-The configuration to use}
+\item{\code{id}}{[\code{character(1)}] \cr
+An id for the Algorithm object.}
 
-\item{\code{initial.budget}}{\cr
-The budget to use for the initialization of the model}
+\item{\code{configuration}}{[any] \cr
+Passed to \code{init.fun} to initialize a model.}
 
-\item{\code{init.fun}}{\cr
-The function to initialize the model}
+\item{\code{initial.budget}}{[\code{integer(1)}] \cr
+The budget to use for the initialization of the model.}
 
-\item{\code{train.fun}}{\cr
-The function to carry out training}
+\item{\code{init.fun}}{[\code{function}]\cr
+The function to initialize a model. Arguments must be \dQuote{r} for the initial resource allocation,
+\dQuote{config} for the output of \code{sample.fun} and \dQuote{problem}.}
 
-\item{\code{performance.fun}}{The function to measure the performance}
+\item{\code{train.fun}}{[\code{function}]\cr
+The function to carry out training. Takes the result of \code{init.fun} as first argument, \dQuote{budget} to specify how many resources should be added and \code{problem}.
+Should return an object that can be passed to \code{train.fun} again.}
+
+\item{\code{performance.fun}}{[\code{function}]\cr
+The function to measure the performance.
+Takes argumennts \dQuote{model} (result of \code{train.fun}) and \code{problem}.}
 }}
 
 \section{Methods}{
 
-\code{$continue(budget)} continue training for \code{budget} iterations  \cr
+\code{$continue(budget)} continue training for \code{budget} iterations \cr
 \code{$getPerformance()} computes the performance of the model \cr
 \code{$visPerformance()} visualizes the performance of the model \cr
 }

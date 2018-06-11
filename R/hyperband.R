@@ -13,24 +13,25 @@
 #' @param prop.discard [\code{integer(1)}]\cr
 #'   Proportion of configurations to be discarded in each round of successive halving.
 #' @param id [\code{character(1)}]\cr
-#'   Name used for \code{\link{Algorithm}} objects.
+#'   Name used for \code{\link{algorithm}} objects.
 #' @param par.set [\code{\link[ParamHelpers]{ParamSet}}]\cr
 #'   Parameter set to tune over.
-#' @param init.fun [\code{function()}]\cr
-#'   The function to initialize a model. Arguments must be \code{r} for the initial resource allocation,
-#'   \code{config} for the output of \code{sample.fun} and \code{problem}.
-#' @param sample.fun [\code{function()}]\cr
-#'   The function to sample from par.set. Takes \code{par.set} and number of configurations to sample \code{n} as arguments.
-#'   If no set, random sampling with \code{\link[ParamHelopers]{sampleValues}} is used.
-#' @param train.fun [\code{function()}]\cr
-#'   The function to carry out training. Takes the result of \code{init.fun} as first argument, \code{budget} to specify how many resources should be added and \code{problem}.
+#' @param init.fun [\code{function}]\cr
+#'   The function to initialize a model. Arguments must be \dQuote{r} for the initial resource allocation,
+#'   \dQuote{config} for the output of \code{sample.fun} and \dQuote{problem}.
+#' @param sample.fun [\code{function}]\cr
+#'   The function to sample from par.set. Takes \dQuote{par.set} and number of configurations to sample \dQuote{n} as arguments.
+#'   If no set, random sampling with \code{\link[ParamHelpers]{sampleValues}} is used.
+#' @param train.fun [\code{function}]\cr
+#'   The function to carry out training. Takes the result of \code{init.fun} as first argument, \dQuote{budget} to specify how many resources should be added and \code{problem}.
 #'   Should return an object that can be passed to \code{train.fun} again.
-#' @param performance.fun [\code{function()}]\cr
+#' @param performance.fun [\code{function}]\cr
 #'   The function to measure the performance.
+#'   Takes argumennts \dQuote{model} (result of \code{train.fun}) and \code{problem}.
 #' @param ...
-#'   Further arguments
+#'   Further arguments.
 #'
-#' @return List of brackets
+#' @return List of brackets.
 #' @examples
 #'
 #' # we need some packages
